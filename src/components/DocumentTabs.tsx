@@ -45,7 +45,7 @@ export const DocumentTabs: React.FC<DocumentTabsProps> = ({
           onClick={onSwitchToEditor}
           style={{ cursor: 'pointer' }}
         >
-          <span>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '220px' }}>
             {document.name} @ {Math.round(document.zoom * 100)}% ({document.width} × {document.height}px)
           </span>
           <span

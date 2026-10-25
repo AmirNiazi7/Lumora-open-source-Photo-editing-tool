@@ -277,20 +277,31 @@ export class LumoraEngine {
 
     ctx.beginPath();
     if (shapeType === 'rect') {
+      const hasStroke = stroke && stroke !== 'transparent' && stroke !== 'none' && strokeWidth > 0;
+      const halfStroke = hasStroke ? strokeWidth / 2 : 0;
+      const rx = halfStroke;
+      const ry = halfStroke;
+      const rw = Math.max(1, layer.width - (hasStroke ? strokeWidth : 0));
+      const rh = Math.max(1, layer.height - (hasStroke ? strokeWidth : 0));
+
       if (radius > 0 && typeof (ctx as any).roundRect === 'function') {
-        const safeRadius = Math.min(radius, Math.abs(layer.width) / 2, Math.abs(layer.height) / 2);
-        (ctx as any).roundRect(0, 0, layer.width, layer.height, safeRadius);
+        const safeRadius = Math.min(radius, rw / 2, rh / 2);
+        (ctx as any).roundRect(rx, ry, rw, rh, safeRadius);
       } else {
-        ctx.rect(0, 0, layer.width, layer.height);
+        ctx.rect(rx, ry, rw, rh);
       }
       if (fill && fill !== 'transparent' && fill !== 'none') ctx.fill();
-      if (stroke && stroke !== 'transparent' && stroke !== 'none' && strokeWidth > 0) ctx.stroke();
+      if (hasStroke) ctx.stroke();
     } else if (shapeType === 'circle') {
+      const hasStroke = stroke && stroke !== 'transparent' && stroke !== 'none' && strokeWidth > 0;
+      const halfStroke = hasStroke ? strokeWidth / 2 : 0;
       const rx = layer.width / 2;
       const ry = layer.height / 2;
-      ctx.ellipse(rx, ry, Math.abs(rx), Math.abs(ry), 0, 0, Math.PI * 2);
+      const radX = Math.max(1, Math.abs(rx) - halfStroke);
+      const radY = Math.max(1, Math.abs(ry) - halfStroke);
+      ctx.ellipse(rx, ry, radX, radY, 0, 0, Math.PI * 2);
       if (fill && fill !== 'transparent' && fill !== 'none') ctx.fill();
-      if (stroke && stroke !== 'transparent' && stroke !== 'none' && strokeWidth > 0) ctx.stroke();
+      if (hasStroke) ctx.stroke();
     } else if (shapeType === 'line') {
       ctx.moveTo(0, 0);
       ctx.lineTo(layer.width, layer.height);

@@ -304,7 +304,7 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
       </div>
 
       {/* Right-aligned Header Controls Matching Photopea */}
-      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px', paddingRight: '6px' }}>
+      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px', paddingRight: '6px', flexShrink: 0 }}>
         <button
           className="layer-action-btn"
           title="Undo (Ctrl+Z)"

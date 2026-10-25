@@ -92,7 +92,7 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
               onUpdateLayer(activeLayerId, { blendMode: e.target.value as BlendMode });
             }
           }}
-          style={{ width: '120px' }}
+          style={{ flex: '0 1 95px', width: '95px', minWidth: '70px', fontSize: '11px', padding: '2px 4px' }}
         >
           <option value="source-over">Normal</option>
           <option value="multiply">Multiply</option>
@@ -105,8 +105,8 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
           <option value="difference">Difference</option>
         </select>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <span style={{ fontSize: '11px', color: '#888' }}>Opacity:</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
+          <span style={{ fontSize: '11px', color: '#888', whiteSpace: 'nowrap' }}>Opacity:</span>
           <input
             type="number"
             min="0"
@@ -119,7 +119,7 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
                 onUpdateLayer(activeLayerId, { opacity: val / 100 });
               }
             }}
-            style={{ width: '42px', textAlign: 'right' }}
+            style={{ width: '36px', textAlign: 'right', fontSize: '11px', padding: '2px 2px' }}
           />
           <span style={{ fontSize: '11px', color: '#888' }}>%</span>
         </div>
