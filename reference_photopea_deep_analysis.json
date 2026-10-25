@@ -1,0 +1,871 @@
+{
+  "windows": [],
+  "panels": [],
+  "tools": [
+    {
+      "title": "File",
+      "rect": {
+        "top": 4,
+        "left": 4,
+        "width": 30.578125,
+        "height": 23
+      },
+      "classes": "",
+      "background": "rgb(71, 71, 71)"
+    },
+    {
+      "title": "Edit",
+      "rect": {
+        "top": 4,
+        "left": 42.578125,
+        "width": 33.09375,
+        "height": 23
+      },
+      "classes": "",
+      "background": "rgb(71, 71, 71)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 37.515625,
+        "left": 12,
+        "width": 20,
+        "height": 20
+      },
+      "classes": "toolicon gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "Move Tool (V)",
+      "rect": {
+        "top": 67,
+        "left": 0,
+        "width": 35,
+        "height": 28.515625
+      },
+      "classes": "toolbtn active",
+      "background": "rgb(93, 93, 93)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 71.515625,
+        "left": 9,
+        "width": 20,
+        "height": 20
+      },
+      "classes": " gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 67,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "Rectangle Select (M)",
+      "rect": {
+        "top": 98.515625,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "toolbtn",
+      "background": "rgb(71, 71, 71)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 103.03125,
+        "left": 9,
+        "width": 20,
+        "height": 20
+      },
+      "classes": " gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 98.515625,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "Lasso Select (L)",
+      "rect": {
+        "top": 130.03125,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "toolbtn",
+      "background": "rgb(71, 71, 71)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 134.546875,
+        "left": 9,
+        "width": 20,
+        "height": 20
+      },
+      "classes": " gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 130.03125,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "Magic Wand (W)",
+      "rect": {
+        "top": 161.546875,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "toolbtn",
+      "background": "rgb(71, 71, 71)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 166.0625,
+        "left": 9,
+        "width": 20,
+        "height": 20
+      },
+      "classes": " gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 161.546875,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "Crop Tool (C)",
+      "rect": {
+        "top": 193.0625,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "toolbtn",
+      "background": "rgb(71, 71, 71)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 197.578125,
+        "left": 9,
+        "width": 20,
+        "height": 20
+      },
+      "classes": " gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 193.0625,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "Eyedropper (I)",
+      "rect": {
+        "top": 224.578125,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "toolbtn",
+      "background": "rgb(71, 71, 71)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 229.09375,
+        "left": 9,
+        "width": 20,
+        "height": 20
+      },
+      "classes": " gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 224.578125,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "Spot Healing Brush Tool (J)",
+      "rect": {
+        "top": 256.09375,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "toolbtn",
+      "background": "rgb(71, 71, 71)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 260.609375,
+        "left": 9,
+        "width": 20,
+        "height": 20
+      },
+      "classes": " gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 256.09375,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "Brush Tool (B)",
+      "rect": {
+        "top": 287.609375,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "toolbtn",
+      "background": "rgb(71, 71, 71)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 292.125,
+        "left": 9,
+        "width": 20,
+        "height": 20
+      },
+      "classes": " gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 287.609375,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "Clone Tool (S)",
+      "rect": {
+        "top": 319.125,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "toolbtn",
+      "background": "rgb(71, 71, 71)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 323.640625,
+        "left": 9,
+        "width": 20,
+        "height": 20
+      },
+      "classes": " gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "Eraser Tool (E)",
+      "rect": {
+        "top": 350.640625,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "toolbtn",
+      "background": "rgb(71, 71, 71)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 355.15625,
+        "left": 9,
+        "width": 20,
+        "height": 20
+      },
+      "classes": " gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 350.640625,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "Gradient Tool (G)",
+      "rect": {
+        "top": 382.15625,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "toolbtn",
+      "background": "rgb(71, 71, 71)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 386.671875,
+        "left": 9,
+        "width": 20,
+        "height": 20
+      },
+      "classes": " gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 382.15625,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "Blur Tool",
+      "rect": {
+        "top": 413.671875,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "toolbtn",
+      "background": "rgb(71, 71, 71)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 418.1875,
+        "left": 9,
+        "width": 20,
+        "height": 20
+      },
+      "classes": " gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 413.671875,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "Dodge Tool (O)",
+      "rect": {
+        "top": 445.1875,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "toolbtn",
+      "background": "rgb(71, 71, 71)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 449.703125,
+        "left": 9,
+        "width": 20,
+        "height": 20
+      },
+      "classes": " gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 445.1875,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "Type Tool (T)",
+      "rect": {
+        "top": 476.703125,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "toolbtn",
+      "background": "rgb(71, 71, 71)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 481.21875,
+        "left": 9,
+        "width": 20,
+        "height": 20
+      },
+      "classes": " gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 476.703125,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "Pen (P)",
+      "rect": {
+        "top": 508.21875,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "toolbtn",
+      "background": "rgb(71, 71, 71)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 512.734375,
+        "left": 9,
+        "width": 20,
+        "height": 20
+      },
+      "classes": " gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 508.21875,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "Path Select (A)",
+      "rect": {
+        "top": 539.734375,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "toolbtn",
+      "background": "rgb(71, 71, 71)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 544.25,
+        "left": 9,
+        "width": 20,
+        "height": 20
+      },
+      "classes": " gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 539.734375,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "Rectangle (U)",
+      "rect": {
+        "top": 571.25,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "toolbtn",
+      "background": "rgb(71, 71, 71)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 575.765625,
+        "left": 9,
+        "width": 20,
+        "height": 20
+      },
+      "classes": " gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 571.25,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "Hand Tool (H)",
+      "rect": {
+        "top": 602.765625,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "toolbtn",
+      "background": "rgb(71, 71, 71)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 607.28125,
+        "left": 9,
+        "width": 20,
+        "height": 20
+      },
+      "classes": " gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 602.765625,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "Zoom Tool (Z)",
+      "rect": {
+        "top": 634.28125,
+        "left": 3,
+        "width": 32,
+        "height": 28.515625
+      },
+      "classes": "toolbtn",
+      "background": "rgb(71, 71, 71)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 638.796875,
+        "left": 9,
+        "width": 20,
+        "height": 20
+      },
+      "classes": " gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "Quick Mask Mode",
+      "rect": {
+        "top": 705.796875,
+        "left": 2,
+        "width": 34,
+        "height": 24.515625
+      },
+      "classes": "fitem",
+      "background": "rgb(71, 71, 71)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 708.3125,
+        "left": 9,
+        "width": 20,
+        "height": 20
+      },
+      "classes": " gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "title": "Virtual Keys",
+      "rect": {
+        "top": 730.3125,
+        "left": 2,
+        "width": 34,
+        "height": 24.515625
+      },
+      "classes": "fitem",
+      "background": "rgb(71, 71, 71)"
+    },
+    {
+      "title": "",
+      "rect": {
+        "top": 732.828125,
+        "left": 9,
+        "width": 20,
+        "height": 20
+      },
+      "classes": " gsicon",
+      "background": "rgba(0, 0, 0, 0)"
+    }
+  ],
+  "menus": [],
+  "toolOptions": [],
+  "layersPanel": null,
+  "dimensions": {
+    "window": {
+      "width": 1440,
+      "height": 900
+    }
+  },
+  "colors": {
+    "bodyBg": "rgb(71, 71, 71)",
+    "appBg": "#383838",
+    "panelBg": "#2f2f2f",
+    "activeBg": "#242424",
+    "border": "#1f1f1f",
+    "accent": "#2675d9",
+    "text": "#dddddd",
+    "textMuted": "#999999"
+  },
+  "bodyChildren": [
+    {
+      "tag": "DIV",
+      "id": "",
+      "class": "flexrow app",
+      "rect": {},
+      "style": {
+        "background": "rgb(71, 71, 71)",
+        "color": "rgb(213, 213, 213)",
+        "display": "flex"
+      }
+    }
+  ],
+  "rightPanels": [
+    {
+      "classes": "",
+      "rect": {
+        "top": 0,
+        "left": 0,
+        "width": 1440,
+        "height": 899
+      },
+      "background": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)",
+      "textSnippet": "AboutReport a bugLearnBlogAPI\nFileEditImageLayerSelectFilterViewWindowMoreAccount\nAuto-Select\nFolder\nLayer\nTransform controlsDistances...\nNew Project."
+    },
+    {
+      "classes": "theme0",
+      "rect": {
+        "top": 0,
+        "left": 0,
+        "width": 1440,
+        "height": 899
+      },
+      "background": "rgb(71, 71, 71)",
+      "color": "rgb(0, 0, 0)",
+      "textSnippet": "AboutReport a bugLearnBlogAPI\nFileEditImageLayerSelectFilterViewWindowMoreAccount\nAuto-Select\nFolder\nLayer\nTransform controlsDistances...\nNew Project."
+    },
+    {
+      "classes": "flexrow app",
+      "rect": {
+        "top": 0,
+        "left": 0,
+        "width": 1440,
+        "height": 899
+      },
+      "background": "rgb(71, 71, 71)",
+      "color": "rgb(213, 213, 213)",
+      "textSnippet": "AboutReport a bugLearnBlogAPI\nFileEditImageLayerSelectFilterViewWindowMoreAccount\nAuto-Select\nFolder\nLayer\nTransform controlsDistances...\nNew Project."
+    },
+    {
+      "classes": "",
+      "rect": {
+        "top": 0,
+        "left": 0,
+        "width": 1260,
+        "height": 899
+      },
+      "background": "rgba(0, 0, 0, 0)",
+      "color": "rgb(213, 213, 213)",
+      "textSnippet": "AboutReport a bugLearnBlogAPI\nFileEditImageLayerSelectFilterViewWindowMoreAccount\nAuto-Select\nFolder\nLayer\nTransform controlsDistances...\nNew Project."
+    },
+    {
+      "classes": "flexrow",
+      "rect": {
+        "top": 63,
+        "left": 0,
+        "width": 1260,
+        "height": 836
+      },
+      "background": "rgba(0, 0, 0, 0)",
+      "color": "rgb(213, 213, 213)",
+      "textSnippet": "New Project.psd\n< >\n> <\nHistorySwatches\n≡\nOpen\nLayersChannelsPaths\n≡\nNormal\nDissolve\nDarken\nMultiply\nColor Burn\nLinear Burn\nDarker Color\nLighten\nScree"
+    },
+    {
+      "classes": "rightbar",
+      "rect": {
+        "top": 63,
+        "left": 949,
+        "width": 311,
+        "height": 836
+      },
+      "background": "rgba(0, 0, 0, 0)",
+      "color": "rgb(213, 213, 213)",
+      "textSnippet": "< >\n> <\nHistorySwatches\n≡\nOpen\nLayersChannelsPaths\n≡\nNormal\nDissolve\nDarken\nMultiply\nColor Burn\nLinear Burn\nDarker Color\nLighten\nScreen\nColor Dodge\nLi"
+    },
+    {
+      "classes": "sbar vcolumn",
+      "rect": {
+        "top": 63,
+        "left": 988,
+        "width": 272,
+        "height": 836
+      },
+      "background": "rgba(0, 0, 0, 0)",
+      "color": "rgb(213, 213, 213)",
+      "textSnippet": "> <\nHistorySwatches\n≡\nOpen\nLayersChannelsPaths\n≡\nNormal\nDissolve\nDarken\nMultiply\nColor Burn\nLinear Burn\nDarker Color\nLighten\nScreen\nColor Dodge\nLinear"
+    },
+    {
+      "classes": "cont",
+      "rect": {
+        "top": 74,
+        "left": 992,
+        "width": 268,
+        "height": 825
+      },
+      "background": "rgba(0, 0, 0, 0)",
+      "color": "rgb(213, 213, 213)",
+      "textSnippet": "HistorySwatches\n≡\nOpen\nLayersChannelsPaths\n≡\nNormal\nDissolve\nDarken\nMultiply\nColor Burn\nLinear Burn\nDarker Color\nLighten\nScreen\nColor Dodge\nLinear Dod"
+    },
+    {
+      "classes": "panelblock",
+      "rect": {
+        "top": 74,
+        "left": 992,
+        "width": 268,
+        "height": 190.09375
+      },
+      "background": "rgba(0, 0, 0, 0)",
+      "color": "rgb(213, 213, 213)",
+      "textSnippet": "HistorySwatches\n≡\nOpen"
+    },
+    {
+      "classes": "block",
+      "rect": {
+        "top": 74,
+        "left": 992,
+        "width": 268,
+        "height": 186.09375
+      },
+      "background": "rgba(0, 0, 0, 0)",
+      "color": "rgb(213, 213, 213)",
+      "textSnippet": "HistorySwatches\n≡\nOpen"
+    }
+  ],
+  "canvases": [
+    {
+      "width": 34,
+      "height": 34,
+      "cssWidth": 34,
+      "cssHeight": 34,
+      "top": 668.796875,
+      "left": 2,
+      "zIndex": "auto"
+    },
+    {
+      "width": 911,
+      "height": 801,
+      "cssWidth": 911,
+      "cssHeight": 801,
+      "top": 97.09375,
+      "left": 38,
+      "zIndex": "auto"
+    },
+    {
+      "width": 32,
+      "height": 18,
+      "cssWidth": 34,
+      "cssHeight": 20,
+      "top": 358.1875,
+      "left": 1023,
+      "zIndex": "auto"
+    }
+  ]
+}
