@@ -49,7 +49,8 @@ export class LumoraEngine {
     activeTool: ToolType,
     toolOptions: ToolOptions,
     tempDrawCanvas?: HTMLCanvasElement | null,
-    shapePreview?: ShapePreview | null
+    shapePreview?: ShapePreview | null,
+    marqueeRect?: { x: number; y: number; width: number; height: number } | null
   ): void {
     const ctx = screenCanvas.getContext('2d');
     if (!ctx) return;
@@ -170,6 +171,20 @@ export class LumoraEngine {
       ctx.lineWidth = 1.2 / doc.zoom;
       ctx.setLineDash([4 / doc.zoom, 4 / doc.zoom]);
       ctx.strokeRect(0, 0, shapePreview.width, shapePreview.height);
+      ctx.restore();
+    }
+
+    // If a marquee selection exists, render marching ants dashed outline
+    if (marqueeRect && marqueeRect.width > 0 && marqueeRect.height > 0) {
+      ctx.save();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.2 / doc.zoom;
+      ctx.setLineDash([4 / doc.zoom, 4 / doc.zoom]);
+      ctx.strokeRect(docX + marqueeRect.x, docY + marqueeRect.y, marqueeRect.width, marqueeRect.height);
+
+      ctx.strokeStyle = '#000000';
+      ctx.lineDashOffset = 4 / doc.zoom;
+      ctx.strokeRect(docX + marqueeRect.x, docY + marqueeRect.y, marqueeRect.width, marqueeRect.height);
       ctx.restore();
     }
 

@@ -343,7 +343,7 @@ export const App: React.FC = () => {
       name: 'Background',
       type: 'image',
       visible: true,
-      locked: false,
+      locked: true,
       opacity: 1,
       blendMode: 'source-over',
       x: 0,
