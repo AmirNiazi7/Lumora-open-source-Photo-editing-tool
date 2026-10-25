@@ -28,55 +28,15 @@ import { RightSidebar } from './components/RightSidebar';
 import { NewDocumentModal } from './components/NewDocumentModal';
 import { AdjustmentsModal } from './components/AdjustmentsModal';
 import { ShortcutsModal } from './components/ShortcutsModal';
+import { HomeScreen } from './components/HomeScreen';
+import { TemplatesModal, generateCreativeNeonBrandingDoc } from './components/TemplatesModal';
 
 const historyManager = new HistoryManager();
 
 export const App: React.FC = () => {
-  // Document State (Default: 1280x720 canvas)
-  const [doc, setDoc] = useState<DocumentProject>(() => {
-    // Initial Background Layer
-    const bgCanvas = document.createElement('canvas');
-    bgCanvas.width = 1280;
-    bgCanvas.height = 720;
-    const bgCtx = bgCanvas.getContext('2d');
-    if (bgCtx) {
-      bgCtx.fillStyle = '#ffffff';
-      bgCtx.fillRect(0, 0, 1280, 720);
-    }
-
-    const initialLayer: Layer = {
-      id: 'layer_bg',
-      name: 'Background',
-      type: 'image',
-      visible: true,
-      locked: false,
-      opacity: 1,
-      blendMode: 'source-over',
-      x: 0,
-      y: 0,
-      width: 1280,
-      height: 720,
-      rotation: 0,
-      scaleX: 1,
-      scaleY: 1,
-      canvas: bgCanvas,
-      adjustments: defaultAdjustments()
-    };
-
-    return {
-      id: 'doc_' + Date.now(),
-      name: 'New Project',
-      width: 1280,
-      height: 720,
-      dpi: 72,
-      background: 'white',
-      layers: [initialLayer],
-      activeLayerId: 'layer_bg',
-      zoom: 1.0,
-      panX: 0,
-      panY: 0
-    };
-  });
+  // Document State (Starts as null so first-time users see Photopea Home view)
+  const [doc, setDoc] = useState<DocumentProject | null>(null);
+  const [activeView, setActiveView] = useState<'home' | 'editor'>('home');
 
   // Active Tool & Options State
   const [activeTool, setActiveTool] = useState<ToolType>('move');
@@ -124,20 +84,24 @@ export const App: React.FC = () => {
   const [isNewDocOpen, setIsNewDocOpen] = useState(false);
   const [isAdjustmentsOpen, setIsAdjustmentsOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
 
   // Hidden File Pickers
   const imageFileInputRef = useRef<HTMLInputElement>(null);
   const projectFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Record initial history state
+  // Record history state
   useEffect(() => {
-    historyManager.clear();
-    historyManager.recordState(doc, 'Initial Document');
-    setHistoryList(historyManager.getHistoryList());
+    if (doc) {
+      historyManager.clear();
+      historyManager.recordState(doc, 'Initial Document');
+      setHistoryList(historyManager.getHistoryList());
+    }
   }, []);
 
   const recordHistory = useCallback(
     (actionName: string) => {
+      if (!doc) return;
       historyManager.recordState(doc, actionName);
       setHistoryList(historyManager.getHistoryList());
     },
@@ -146,51 +110,63 @@ export const App: React.FC = () => {
 
   // Document & Layer State Modifiers
   const updateDocument = (updates: Partial<DocumentProject>) => {
-    setDoc((prev) => ({ ...prev, ...updates }));
+    setDoc((prev) => (prev ? { ...prev, ...updates } : null));
   };
 
   const updateLayer = (layerId: string, updates: Partial<Layer>) => {
-    setDoc((prev) => ({
-      ...prev,
-      layers: prev.layers.map((l) => (l.id === layerId ? { ...l, ...updates } : l))
-    }));
+    setDoc((prev) =>
+      prev
+        ? {
+            ...prev,
+            layers: prev.layers.map((l) => (l.id === layerId ? { ...l, ...updates } : l))
+          }
+        : null
+    );
   };
 
   const addLayer = (layer: Layer) => {
-    setDoc((prev) => ({
-      ...prev,
-      layers: [...prev.layers, layer],
-      activeLayerId: layer.id
-    }));
+    setDoc((prev) =>
+      prev
+        ? {
+            ...prev,
+            layers: [...prev.layers, layer],
+            activeLayerId: layer.id
+          }
+        : null
+    );
   };
 
   // Undo / Redo Actions
   const handleUndo = () => {
+    if (!doc) return;
     const result = historyManager.undo(doc);
     if (result) {
-      setDoc((prev) => ({ ...prev, ...result.restoredDoc }));
+      setDoc((prev) => (prev ? { ...prev, ...result.restoredDoc } : null));
       setHistoryList(historyManager.getHistoryList());
     }
   };
 
   const handleRedo = () => {
+    if (!doc) return;
     const result = historyManager.redo(doc);
     if (result) {
-      setDoc((prev) => ({ ...prev, ...result.restoredDoc }));
+      setDoc((prev) => (prev ? { ...prev, ...result.restoredDoc } : null));
       setHistoryList(historyManager.getHistoryList());
     }
   };
 
   const handleJumpToHistory = (index: number) => {
+    if (!doc) return;
     const restored = historyManager.jumpToHistoryIndex(index, doc);
     if (restored) {
-      setDoc((prev) => ({ ...prev, ...restored }));
+      setDoc((prev) => (prev ? { ...prev, ...restored } : null));
       setHistoryList(historyManager.getHistoryList());
     }
   };
 
   // Layer Operations
   const handleNewLayer = () => {
+    if (!doc) return;
     const newCanvas = document.createElement('canvas');
     newCanvas.width = doc.width;
     newCanvas.height = doc.height;
@@ -219,6 +195,7 @@ export const App: React.FC = () => {
   };
 
   const handleDuplicateLayer = () => {
+    if (!doc) return;
     const active = doc.layers.find((l) => l.id === doc.activeLayerId);
     if (!active) return;
 
@@ -245,22 +222,27 @@ export const App: React.FC = () => {
   };
 
   const handleDeleteLayer = () => {
+    if (!doc) return;
     if (doc.layers.length <= 1 || !doc.activeLayerId) return;
     const activeIndex = doc.layers.findIndex((l) => l.id === doc.activeLayerId);
     const deletedName = doc.layers[activeIndex].name;
     const remaining = doc.layers.filter((l) => l.id !== doc.activeLayerId);
     const newActiveId = remaining[Math.max(0, activeIndex - 1)].id;
 
-    setDoc((prev) => ({
-      ...prev,
-      layers: remaining,
-      activeLayerId: newActiveId
-    }));
+    setDoc((prev) =>
+      prev
+        ? {
+            ...prev,
+            layers: remaining,
+            activeLayerId: newActiveId
+          }
+        : null
+    );
     recordHistory(`Delete ${deletedName}`);
   };
 
   const handleMoveLayerUp = () => {
-    if (!doc.activeLayerId) return;
+    if (!doc || !doc.activeLayerId) return;
     const idx = doc.layers.findIndex((l) => l.id === doc.activeLayerId);
     if (idx >= doc.layers.length - 1) return;
 
@@ -269,12 +251,12 @@ export const App: React.FC = () => {
     nextLayers[idx] = nextLayers[idx + 1];
     nextLayers[idx + 1] = temp;
 
-    setDoc((prev) => ({ ...prev, layers: nextLayers }));
+    setDoc((prev) => (prev ? { ...prev, layers: nextLayers } : null));
     recordHistory('Reorder Layer Up');
   };
 
   const handleMoveLayerDown = () => {
-    if (!doc.activeLayerId) return;
+    if (!doc || !doc.activeLayerId) return;
     const idx = doc.layers.findIndex((l) => l.id === doc.activeLayerId);
     if (idx <= 0) return;
 
@@ -283,11 +265,12 @@ export const App: React.FC = () => {
     nextLayers[idx] = nextLayers[idx - 1];
     nextLayers[idx - 1] = temp;
 
-    setDoc((prev) => ({ ...prev, layers: nextLayers }));
+    setDoc((prev) => (prev ? { ...prev, layers: nextLayers } : null));
     recordHistory('Reorder Layer Down');
   };
 
   const handleFlipHorizontal = () => {
+    if (!doc) return;
     const active = doc.layers.find((l) => l.id === doc.activeLayerId);
     if (!active) return;
     updateLayer(active.id, { scaleX: (active.scaleX || 1) * -1 });
@@ -295,6 +278,7 @@ export const App: React.FC = () => {
   };
 
   const handleFlipVertical = () => {
+    if (!doc) return;
     const active = doc.layers.find((l) => l.id === doc.activeLayerId);
     if (!active) return;
     updateLayer(active.id, { scaleY: (active.scaleY || 1) * -1 });
@@ -302,6 +286,7 @@ export const App: React.FC = () => {
   };
 
   const handleRotate90 = () => {
+    if (!doc) return;
     const active = doc.layers.find((l) => l.id === doc.activeLayerId);
     if (!active) return;
     updateLayer(active.id, { rotation: ((active.rotation || 0) + 90) % 360 });
@@ -310,18 +295,22 @@ export const App: React.FC = () => {
 
   // Zoom Controls
   const handleZoomIn = () => {
+    if (!doc) return;
     updateDocument({ zoom: Math.min(32.0, doc.zoom * 1.25) });
   };
 
   const handleZoomOut = () => {
+    if (!doc) return;
     updateDocument({ zoom: Math.max(0.05, doc.zoom * 0.8) });
   };
 
   const handleActualSize = () => {
+    if (!doc) return;
     updateDocument({ zoom: 1.0, panX: 0, panY: 0 });
   };
 
   const handleFitToScreen = () => {
+    if (!doc) return;
     const container = window.document.querySelector('.viewport-canvas-container');
     if (!container) return;
     const rect = container.getBoundingClientRect();
@@ -386,6 +375,7 @@ export const App: React.FC = () => {
     historyManager.clear();
     historyManager.recordState(newDoc, 'Create Project');
     setHistoryList(historyManager.getHistoryList());
+    setActiveView('editor');
 
     setTimeout(handleFitToScreen, 100);
   };
@@ -397,6 +387,7 @@ export const App: React.FC = () => {
       const { layer } = await createLayerFromImageFile(file);
       addLayer(layer);
       recordHistory(`Import ${file.name}`);
+      setActiveView('editor');
       e.target.value = '';
     }
   };
@@ -415,6 +406,7 @@ export const App: React.FC = () => {
       historyManager.clear();
       historyManager.recordState(loadedDoc, `Open ${file.name}`);
       setHistoryList(historyManager.getHistoryList());
+      setActiveView('editor');
       setTimeout(handleFitToScreen, 100);
     } catch (err: any) {
       alert('Failed to load project: ' + (err?.message || err));
@@ -430,8 +422,93 @@ export const App: React.FC = () => {
     }
   };
 
+  // Generate Demo Layout
+  const handleGenerateDemo = () => {
+    const demoDoc = generateCreativeNeonBrandingDoc();
+    setDoc(demoDoc);
+    historyManager.clear();
+    historyManager.recordState(demoDoc, 'Neon Creative Demo');
+    setHistoryList(historyManager.getHistoryList());
+    setActiveView('editor');
+    setTimeout(handleFitToScreen, 100);
+  };
+
+  // Select Template from Gallery
+  const handleSelectTemplate = (templateDoc: DocumentProject) => {
+    setDoc(templateDoc);
+    historyManager.clear();
+    historyManager.recordState(templateDoc, `Template: ${templateDoc.name}`);
+    setHistoryList(historyManager.getHistoryList());
+    setIsTemplatesOpen(false);
+    setActiveView('editor');
+    setTimeout(handleFitToScreen, 100);
+  };
+
+  // Drag & Drop File Handling (PSD, Lumora, Images)
+  const handleDroppedFile = async (file: File) => {
+    const name = file.name.toLowerCase();
+    if (name.endsWith('.psd') || name.endsWith('.lumora') || name.endsWith('.json')) {
+      await handleOpenProjectOrPsdFile(file);
+    } else if (file.type.startsWith('image/') || name.match(/\.(png|jpe?g|webp|gif|bmp|svg)$/)) {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth || 1200;
+        canvas.height = img.naturalHeight || 800;
+        const ctx = canvas.getContext('2d');
+        if (ctx) ctx.drawImage(img, 0, 0);
+
+        const layer: Layer = {
+          id: 'layer_bg_' + Date.now(),
+          name: file.name.replace(/\.[^/.]+$/, ''),
+          type: 'image',
+          visible: true,
+          locked: false,
+          opacity: 1,
+          blendMode: 'source-over',
+          x: 0,
+          y: 0,
+          width: canvas.width,
+          height: canvas.height,
+          rotation: 0,
+          scaleX: 1,
+          scaleY: 1,
+          canvas,
+          adjustments: defaultAdjustments()
+        };
+
+        const newDoc: DocumentProject = {
+          id: 'doc_' + Date.now(),
+          name: file.name,
+          width: canvas.width,
+          height: canvas.height,
+          dpi: 72,
+          background: 'transparent',
+          layers: [layer],
+          activeLayerId: layer.id,
+          zoom: 1.0,
+          panX: 0,
+          panY: 0
+        };
+
+        setDoc(newDoc);
+        historyManager.clear();
+        historyManager.recordState(newDoc, `Open ${file.name}`);
+        setHistoryList(historyManager.getHistoryList());
+        setActiveView('editor');
+        setTimeout(handleFitToScreen, 100);
+      };
+      img.src = url;
+    } else {
+      alert(`Format not supported directly: ${file.name}. Please open PSD, Lumora, PNG, JPG, or WebP.`);
+    }
+  };
+
   // Export as PSD (Adobe Photoshop with layers)
   const handleExportPsd = () => {
+    if (!doc) return;
     try {
       exportProjectAsPsd(doc);
     } catch (err: any) {
@@ -442,12 +519,14 @@ export const App: React.FC = () => {
 
   // Export as PNG / JPEG
   const handleExportPng = async () => {
+    if (!doc) return;
     const merged = LumoraEngine.renderMergedCanvas(doc);
     const blob = await exportCanvasAsBlob(merged, 'png');
     downloadBlob(blob, `${doc.name}.png`);
   };
 
   const handleExportJpeg = async () => {
+    if (!doc) return;
     const merged = LumoraEngine.renderMergedCanvas(doc);
     const blob = await exportCanvasAsBlob(merged, 'jpeg', 0.92);
     downloadBlob(blob, `${doc.name}.jpg`);
@@ -455,12 +534,13 @@ export const App: React.FC = () => {
 
   // Save Project File (.lumora)
   const handleSaveProject = () => {
+    if (!doc) return;
     saveProjectFile(doc);
   };
 
   // Apply Crop
   const handleApplyCrop = () => {
-    if (!cropRect) return;
+    if (!doc || !cropRect) return;
     const { width: newW, height: newH, x: cropX, y: cropY } = cropRect;
     if (newW < 20 || newH < 20) return;
 
@@ -560,7 +640,7 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [doc]);
 
-  const activeLayer = doc.layers.find((l) => l.id === doc.activeLayerId);
+  const activeLayer = doc ? doc.layers.find((l) => l.id === doc.activeLayerId) : undefined;
 
   return (
     <div className="lumora-app">
@@ -583,6 +663,7 @@ export const App: React.FC = () => {
       {/* Top Menu Bar */}
       <div className="lumora-header">
         <TopMenuBar
+          onGoHome={() => setActiveView('home')}
           onNewDocument={() => setIsNewDocOpen(true)}
           onOpenImage={() => imageFileInputRef.current?.click()}
           onSaveProject={handleSaveProject}
@@ -608,106 +689,185 @@ export const App: React.FC = () => {
           onShowShortcuts={() => setIsShortcutsOpen(true)}
         />
 
-        {/* Tool Options Bar */}
-        <ToolOptionsBar
-          activeTool={activeTool}
-          options={toolOptions}
-          onOptionsChange={(newOpts) => setToolOptions((prev) => ({ ...prev, ...newOpts }))}
-          onApplyCrop={handleApplyCrop}
-          onCancelCrop={handleCancelCrop}
-          onFlipHorizontal={handleFlipHorizontal}
-          onFlipVertical={handleFlipVertical}
-          onRotate90={handleRotate90}
-          onFitToScreen={handleFitToScreen}
-          onActualSize={handleActualSize}
-        />
-      </div>
-
-      {/* Main Workspace Layout */}
-      <div className="lumora-workspace">
-        {/* Left Toolbar */}
-        <LeftToolbar
-          activeTool={activeTool}
-          onSelectTool={setActiveTool}
-          options={toolOptions}
-          onOptionsChange={(newOpts) => setToolOptions((prev) => ({ ...prev, ...newOpts }))}
-        />
-
-        {/* Central Viewport */}
-        <div className="lumora-center">
-          <DocumentTabs
-            document={doc}
-            onZoomIn={handleZoomIn}
-            onZoomOut={handleZoomOut}
+        {/* Tool Options Bar (Only active when in editor mode with an open document) */}
+        {activeView === 'editor' && doc && (
+          <ToolOptionsBar
+            activeTool={activeTool}
+            options={toolOptions}
+            onOptionsChange={(newOpts) => setToolOptions((prev) => ({ ...prev, ...newOpts }))}
+            onApplyCrop={handleApplyCrop}
+            onCancelCrop={handleCancelCrop}
+            onFlipHorizontal={handleFlipHorizontal}
+            onFlipVertical={handleFlipVertical}
+            onRotate90={handleRotate90}
             onFitToScreen={handleFitToScreen}
             onActualSize={handleActualSize}
           />
+        )}
+      </div>
 
-          <CanvasViewport
-            document={doc}
-            activeTool={activeTool}
-            toolOptions={toolOptions}
-            onUpdateDocument={updateDocument}
-            onUpdateLayer={updateLayer}
-            onAddLayer={addLayer}
-            onRecordHistory={recordHistory}
-            onSelectLayer={(id) => updateDocument({ activeLayerId: id })}
-            onColorSampled={(col) =>
-              setToolOptions((prev) => ({
-                ...prev,
-                activeColor: col,
-                brush: { ...prev.brush, color: col },
-                text: { ...prev.text, color: col },
-                shape: { ...prev.shape, fill: col }
-              }))
-            }
-            cropRect={cropRect}
-            onCropRectChange={setCropRect}
-            onOpenProjectFile={handleOpenProjectOrPsdFile}
-          />
+      {/* Main Workspace Layout */}
+      {activeView === 'home' ? (
+        <div className="lumora-workspace home-mode">
+          <div className="lumora-center home-mode">
+            <DocumentTabs
+              document={doc}
+              activeView={activeView}
+              onSwitchToHome={() => setActiveView('home')}
+              onSwitchToEditor={() => setActiveView('editor')}
+              onCloseDocument={() => {
+                setDoc(null);
+                setActiveView('home');
+              }}
+              onZoomIn={handleZoomIn}
+              onZoomOut={handleZoomOut}
+              onFitToScreen={handleFitToScreen}
+              onActualSize={handleActualSize}
+            />
 
-          {/* Status Bar */}
-          <div className="lumora-statusbar">
-            <span>
-              Document: {doc.width} × {doc.height}px | DPI: {doc.dpi} | {doc.layers.length} Layers
-            </span>
-            <span>
-              Active: {activeLayer ? `${activeLayer.name} (${activeLayer.type})` : 'None'} | Tool:{' '}
-              {activeTool.toUpperCase()}
-            </span>
+            <HomeScreen
+              onNewProject={() => setIsNewDocOpen(true)}
+              onOpenFromComputer={() => projectFileInputRef.current?.click()}
+              onOpenTemplates={() => setIsTemplatesOpen(true)}
+              onShowShortcuts={() => setIsShortcutsOpen(true)}
+              onGenerateDemo={handleGenerateDemo}
+              onDropFile={handleDroppedFile}
+            />
           </div>
         </div>
+      ) : (
+        <div className="lumora-workspace">
+          {/* Left Toolbar */}
+          <LeftToolbar
+            activeTool={activeTool}
+            onSelectTool={setActiveTool}
+            options={toolOptions}
+            onOptionsChange={(newOpts) => setToolOptions((prev) => ({ ...prev, ...newOpts }))}
+          />
 
-        {/* Right Sidebar (Layers & History) */}
-        <RightSidebar
-          layers={doc.layers}
-          activeLayerId={doc.activeLayerId}
-          historyItems={historyList}
-          onSelectLayer={(id) => updateDocument({ activeLayerId: id })}
-          onToggleVisibility={(id) => {
-            const l = doc.layers.find((ly) => ly.id === id);
-            if (l) updateLayer(id, { visible: !l.visible });
-          }}
-          onToggleLock={(id) => {
-            const l = doc.layers.find((ly) => ly.id === id);
-            if (l) updateLayer(id, { locked: !l.locked });
-          }}
-          onUpdateLayer={updateLayer}
-          onNewLayer={handleNewLayer}
-          onDuplicateLayer={handleDuplicateLayer}
-          onDeleteLayer={handleDeleteLayer}
-          onMoveLayerUp={handleMoveLayerUp}
-          onMoveLayerDown={handleMoveLayerDown}
-          onJumpToHistory={handleJumpToHistory}
-          onOpenAdjustments={() => setIsAdjustmentsOpen(true)}
-        />
-      </div>
+          {/* Central Viewport */}
+          <div className="lumora-center">
+            <DocumentTabs
+              document={doc}
+              activeView={activeView}
+              onSwitchToHome={() => setActiveView('home')}
+              onSwitchToEditor={() => setActiveView('editor')}
+              onCloseDocument={() => {
+                setDoc(null);
+                setActiveView('home');
+              }}
+              onZoomIn={handleZoomIn}
+              onZoomOut={handleZoomOut}
+              onFitToScreen={handleFitToScreen}
+              onActualSize={handleActualSize}
+            />
+
+            {doc ? (
+              <CanvasViewport
+                document={doc}
+                activeTool={activeTool}
+                toolOptions={toolOptions}
+                onUpdateDocument={updateDocument}
+                onUpdateLayer={updateLayer}
+                onAddLayer={addLayer}
+                onRecordHistory={recordHistory}
+                onSelectLayer={(id) => updateDocument({ activeLayerId: id })}
+                onColorSampled={(col) =>
+                  setToolOptions((prev) => ({
+                    ...prev,
+                    activeColor: col,
+                    brush: { ...prev.brush, color: col },
+                    text: { ...prev.text, color: col },
+                    shape: { ...prev.shape, fill: col }
+                  }))
+                }
+                cropRect={cropRect}
+                onCropRectChange={setCropRect}
+                onOpenProjectFile={handleOpenProjectOrPsdFile}
+              />
+            ) : (
+              <div
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#71717a',
+                  flexDirection: 'column',
+                  gap: '12px',
+                  cursor: 'pointer'
+                }}
+                onClick={() => setActiveView('home')}
+              >
+                <span>No active document.</span>
+                <button
+                  style={{
+                    backgroundColor: '#2675d9',
+                    color: '#fff',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Return to Home Screen
+                </button>
+              </div>
+            )}
+
+            {/* Status Bar */}
+            {doc && (
+              <div className="lumora-statusbar">
+                <span>
+                  Document: {doc.width} × {doc.height}px | DPI: {doc.dpi} | {doc.layers.length} Layers
+                </span>
+                <span>
+                  Active: {activeLayer ? `${activeLayer.name} (${activeLayer.type})` : 'None'} | Tool:{' '}
+                  {activeTool.toUpperCase()}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Right Sidebar (Layers & History) */}
+          {doc && (
+            <RightSidebar
+              layers={doc.layers}
+              activeLayerId={doc.activeLayerId}
+              historyItems={historyList}
+              onSelectLayer={(id) => updateDocument({ activeLayerId: id })}
+              onToggleVisibility={(id) => {
+                const l = doc.layers.find((ly) => ly.id === id);
+                if (l) updateLayer(id, { visible: !l.visible });
+              }}
+              onToggleLock={(id) => {
+                const l = doc.layers.find((ly) => ly.id === id);
+                if (l) updateLayer(id, { locked: !l.locked });
+              }}
+              onUpdateLayer={updateLayer}
+              onNewLayer={handleNewLayer}
+              onDuplicateLayer={handleDuplicateLayer}
+              onDeleteLayer={handleDeleteLayer}
+              onMoveLayerUp={handleMoveLayerUp}
+              onMoveLayerDown={handleMoveLayerDown}
+              onJumpToHistory={handleJumpToHistory}
+              onOpenAdjustments={() => setIsAdjustmentsOpen(true)}
+            />
+          )}
+        </div>
+      )}
 
       {/* Modals */}
       <NewDocumentModal
         isOpen={isNewDocOpen}
         onClose={() => setIsNewDocOpen(false)}
         onCreate={handleCreateNewDocument}
+      />
+
+      <TemplatesModal
+        isOpen={isTemplatesOpen}
+        onClose={() => setIsTemplatesOpen(false)}
+        onSelectTemplate={handleSelectTemplate}
       />
 
       {activeLayer && (
