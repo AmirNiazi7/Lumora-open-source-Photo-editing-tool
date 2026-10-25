@@ -15,7 +15,9 @@ import {
   downloadBlob,
   saveProjectFile,
   deserializeProject,
-  createLayerFromImageFile
+  createLayerFromImageFile,
+  openPsdFile,
+  exportProjectAsPsd
 } from './engine/ProjectIO';
 import { TopMenuBar } from './components/TopMenuBar';
 import { ToolOptionsBar } from './components/ToolOptionsBar';
@@ -399,22 +401,42 @@ export const App: React.FC = () => {
     }
   };
 
-  // Open .lumora Project File
+  // Open .psd or .lumora Project File
+  const handleOpenProjectOrPsdFile = async (file: File) => {
+    try {
+      let loadedDoc: DocumentProject;
+      if (file.name.toLowerCase().endsWith('.psd')) {
+        loadedDoc = await openPsdFile(file);
+      } else {
+        const text = await file.text();
+        loadedDoc = await deserializeProject(text);
+      }
+      setDoc(loadedDoc);
+      historyManager.clear();
+      historyManager.recordState(loadedDoc, `Open ${file.name}`);
+      setHistoryList(historyManager.getHistoryList());
+      setTimeout(handleFitToScreen, 100);
+    } catch (err: any) {
+      alert('Failed to load project: ' + (err?.message || err));
+      console.error('File load error:', err);
+    }
+  };
+
   const handleProjectFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      const text = await file.text();
-      try {
-        const loadedDoc = await deserializeProject(text);
-        setDoc(loadedDoc);
-        historyManager.clear();
-        historyManager.recordState(loadedDoc, 'Open Project');
-        setHistoryList(historyManager.getHistoryList());
-        setTimeout(handleFitToScreen, 100);
-      } catch (err: any) {
-        alert('Failed to load project: ' + err.message);
-      }
+      await handleOpenProjectOrPsdFile(file);
       e.target.value = '';
+    }
+  };
+
+  // Export as PSD (Adobe Photoshop with layers)
+  const handleExportPsd = () => {
+    try {
+      exportProjectAsPsd(doc);
+    } catch (err: any) {
+      alert('Failed to export PSD: ' + (err?.message || err));
+      console.error('PSD export error:', err);
     }
   };
 
@@ -554,7 +576,7 @@ export const App: React.FC = () => {
         type="file"
         ref={projectFileInputRef}
         style={{ display: 'none' }}
-        accept=".lumora,.json"
+        accept=".psd,.lumora,.json"
         onChange={handleProjectFileSelected}
       />
 
@@ -565,6 +587,7 @@ export const App: React.FC = () => {
           onOpenImage={() => imageFileInputRef.current?.click()}
           onSaveProject={handleSaveProject}
           onOpenProject={() => projectFileInputRef.current?.click()}
+          onExportPsd={handleExportPsd}
           onExportPng={handleExportPng}
           onExportJpeg={handleExportJpeg}
           onUndo={handleUndo}
@@ -640,6 +663,7 @@ export const App: React.FC = () => {
             }
             cropRect={cropRect}
             onCropRectChange={setCropRect}
+            onOpenProjectFile={handleOpenProjectOrPsdFile}
           />
 
           {/* Status Bar */}

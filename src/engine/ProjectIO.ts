@@ -2,7 +2,27 @@
 import { DocumentProject, Layer, SerializedLumoraProject, BlendMode } from '../types';
 import { defaultAdjustments } from './Adjustments';
 import { LumoraEngine } from './LumoraEngine';
-import { readPsd, writePsd } from 'ag-psd';
+import { readPsd, writePsd, initializeCanvas } from 'ag-psd';
+
+// Initialize HTML5 Canvas factory for ag-psd in browser environment
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+  initializeCanvas(
+    (width: number, height: number) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(width));
+      canvas.height = Math.max(1, Math.round(height));
+      return canvas;
+    },
+    (width: number, height: number) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        return ctx.createImageData(Math.max(1, Math.round(width)), Math.max(1, Math.round(height)));
+      }
+      return new ImageData(Math.max(1, Math.round(width)), Math.max(1, Math.round(height)));
+    }
+  );
+}
 
 export async function exportCanvasAsBlob(
   canvas: HTMLCanvasElement,
@@ -85,7 +105,11 @@ function mapToPsdBlendMode(mode?: BlendMode): any {
 
 export async function openPsdFile(file: File): Promise<DocumentProject> {
   const arrayBuffer = await file.arrayBuffer();
-  const psd = readPsd(arrayBuffer);
+  const psd = readPsd(arrayBuffer, {
+    skipLayerImageData: false,
+    skipCompositeImageData: false,
+    skipThumbnail: true
+  });
 
   const docWidth = psd.width || 1280;
   const docHeight = psd.height || 720;
@@ -100,22 +124,25 @@ export async function openPsdFile(file: File): Promise<DocumentProject> {
       return;
     }
 
+    const w = Math.max(1, l.canvas ? l.canvas.width : ((l.right ?? docWidth) - (l.left ?? 0)));
+    const h = Math.max(1, l.canvas ? l.canvas.height : ((l.bottom ?? docHeight) - (l.top ?? 0)));
     const canvas = document.createElement('canvas');
-    const w = l.canvas ? l.canvas.width : Math.max(1, (l.right ?? docWidth) - (l.left ?? 0));
-    const h = l.canvas ? l.canvas.height : Math.max(1, (l.bottom ?? docHeight) - (l.top ?? 0));
     canvas.width = w;
     canvas.height = h;
 
     const ctx = canvas.getContext('2d');
-    if (ctx && l.canvas) {
-      ctx.drawImage(l.canvas, 0, 0);
+    if (ctx) {
+      if (l.canvas) {
+        ctx.drawImage(l.canvas, 0, 0);
+      } else if (l.imageData) {
+        ctx.putImageData(l.imageData, 0, 0);
+      }
     }
 
     let layerType: Layer['type'] = 'image';
     let textConfig = undefined;
 
     if (l.text && l.text.text) {
-      layerType = 'text';
       textConfig = {
         text: l.text.text,
         fontSize: l.text.style?.fontSize ? Math.round(l.text.style.fontSize) : 36,
@@ -126,15 +153,21 @@ export async function openPsdFile(file: File): Promise<DocumentProject> {
         bold: !!l.text.style?.fauxBold,
         italic: !!l.text.style?.fauxItalic
       };
+      // If no canvas was rendered by ag-psd, treat as text layer for vector text rendering
+      if (!l.canvas && !l.imageData) {
+        layerType = 'text';
+      }
     }
+
+    const layerName = l.name || (l.text?.text ? l.text.text.slice(0, 24) : 'Layer');
 
     loadedLayers.push({
       id: 'layer_psd_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
-      name: l.name || 'PSD Layer',
+      name: layerName,
       type: layerType,
       visible: !l.hidden,
       locked: false,
-      opacity: typeof l.opacity === 'number' ? l.opacity : 1,
+      opacity: typeof l.opacity === 'number' ? Math.max(0, Math.min(1, l.opacity)) : 1,
       blendMode: mapPsdBlendMode(l.blendMode),
       x: l.left ?? 0,
       y: l.top ?? 0,

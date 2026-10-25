@@ -7,6 +7,7 @@ interface TopMenuBarProps {
   onOpenImage: () => void;
   onSaveProject: () => void;
   onOpenProject: () => void;
+  onExportPsd: () => void;
   onExportPng: () => void;
   onExportJpeg: () => void;
   onUndo: () => void;
@@ -32,6 +33,7 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
   onOpenImage,
   onSaveProject,
   onOpenProject,
+  onExportPsd,
   onExportPng,
   onExportJpeg,
   onUndo,
@@ -104,17 +106,20 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
               <span>New Project...</span>
               <span className="dropdown-shortcut">Ctrl+N</span>
             </button>
-            <button className="dropdown-item" onClick={() => executeAndClose(onOpenImage)}>
-              <span>Open Image...</span>
+            <button className="dropdown-item" onClick={() => executeAndClose(onOpenProject)}>
+              <span>Open PSD / Project...</span>
               <span className="dropdown-shortcut">Ctrl+O</span>
             </button>
-            <button className="dropdown-item" onClick={() => executeAndClose(onOpenProject)}>
-              <span>Open .lumora Project...</span>
+            <button className="dropdown-item" onClick={() => executeAndClose(onOpenImage)}>
+              <span>Insert Image as Layer...</span>
             </button>
             <div className="dropdown-divider" />
             <button className="dropdown-item" onClick={() => executeAndClose(onSaveProject)}>
               <span>Save Project (.lumora)</span>
               <span className="dropdown-shortcut">Ctrl+S</span>
+            </button>
+            <button className="dropdown-item" onClick={() => executeAndClose(onExportPsd)}>
+              <span>Export as PSD (Photoshop)...</span>
             </button>
             <button className="dropdown-item" onClick={() => executeAndClose(onExportPng)}>
               <span>Export as PNG</span>

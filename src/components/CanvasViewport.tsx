@@ -21,6 +21,7 @@ interface CanvasViewportProps {
   onColorSampled: (color: string) => void;
   cropRect: { x: number; y: number; width: number; height: number } | null;
   onCropRectChange: (rect: { x: number; y: number; width: number; height: number } | null) => void;
+  onOpenProjectFile?: (file: File) => void;
 }
 
 export const CanvasViewport: React.FC<CanvasViewportProps> = ({
@@ -34,7 +35,8 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
   onSelectLayer,
   onColorSampled,
   cropRect,
-  onCropRectChange
+  onCropRectChange,
+  onOpenProjectFile
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -739,7 +741,12 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
     e.preventDefault();
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0];
-      if (file.type.startsWith('image/')) {
+      const lower = file.name.toLowerCase();
+      if (lower.endsWith('.psd') || lower.endsWith('.lumora') || lower.endsWith('.json')) {
+        if (onOpenProjectFile) {
+          onOpenProjectFile(file);
+        }
+      } else if (file.type.startsWith('image/')) {
         const { layer } = await createLayerFromImageFile(file);
         onAddLayer(layer);
         onRecordHistory(`Import ${file.name}`);
