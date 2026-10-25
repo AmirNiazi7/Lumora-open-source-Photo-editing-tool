@@ -1,6 +1,7 @@
 // Lumora Studio - Layers Panel
 import React, { useState } from 'react';
 import { Layer, BlendMode } from '../types';
+import { LumoraEngine } from '../engine/LumoraEngine';
 import {
   Eye,
   EyeOff,
@@ -167,6 +168,75 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
 
                 {/* Layer Thumbnail / Type Icon */}
                 <div className="layer-thumbnail">{renderLayerIcon(layer.type)}</div>
+
+                {/* Direct Color Swatch for Shape Layer */}
+                {layer.type === 'shape' && layer.shapeConfig && (
+                  <label
+                    title={`Shape Fill: ${layer.shapeConfig.fill} (Click to change)`}
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      width: '12px',
+                      height: '12px',
+                      borderRadius: '2px',
+                      backgroundColor:
+                        layer.shapeConfig.fill === 'transparent' || layer.shapeConfig.fill === 'none'
+                          ? 'transparent'
+                          : layer.shapeConfig.fill,
+                      border: '1px solid #777',
+                      marginRight: '6px',
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                      position: 'relative'
+                    }}
+                  >
+                    <input
+                      type="color"
+                      value={layer.shapeConfig.fill.startsWith('#') ? layer.shapeConfig.fill : '#2675d9'}
+                      onChange={(e) => {
+                        const updated = {
+                          ...layer,
+                          shapeConfig: { ...layer.shapeConfig!, fill: e.target.value }
+                        };
+                        LumoraEngine.updateShapeRasterCanvas(updated);
+                        onUpdateLayer(layer.id, { shapeConfig: updated.shapeConfig, canvas: updated.canvas });
+                      }}
+                      style={{ opacity: 0, width: '1px', height: '1px', position: 'absolute' }}
+                    />
+                  </label>
+                )}
+
+                {/* Direct Color Swatch for Text Layer */}
+                {layer.type === 'text' && layer.textConfig && (
+                  <label
+                    title={`Text Color: ${layer.textConfig.color} (Click to change)`}
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      width: '12px',
+                      height: '12px',
+                      borderRadius: '2px',
+                      backgroundColor: layer.textConfig.color || '#ffffff',
+                      border: '1px solid #777',
+                      marginRight: '6px',
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                      position: 'relative'
+                    }}
+                  >
+                    <input
+                      type="color"
+                      value={layer.textConfig.color.startsWith('#') ? layer.textConfig.color : '#ffffff'}
+                      onChange={(e) => {
+                        const updated = {
+                          ...layer,
+                          textConfig: { ...layer.textConfig!, color: e.target.value }
+                        };
+                        LumoraEngine.updateTextRasterCanvas(updated);
+                        onUpdateLayer(layer.id, { textConfig: updated.textConfig, canvas: updated.canvas });
+                      }}
+                      style={{ opacity: 0, width: '1px', height: '1px', position: 'absolute' }}
+                    />
+                  </label>
+                )}
 
                 {/* Layer Name (Double click to rename) */}
                 {editingId === layer.id ? (

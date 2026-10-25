@@ -4,6 +4,18 @@ import { applyAdjustmentsToImageData } from './Adjustments';
 
 export type TransformHandle = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'rot' | 'move' | null;
 
+export interface ShapePreview {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  shapeType: 'rect' | 'circle' | 'line';
+  fill: string;
+  stroke: string;
+  strokeWidth: number;
+  cornerRadius?: number;
+}
+
 export class LumoraEngine {
   // Checkerboard pattern generator
   private static checkerPattern: CanvasPattern | null = null;
@@ -36,7 +48,8 @@ export class LumoraEngine {
     doc: DocumentProject,
     activeTool: ToolType,
     toolOptions: ToolOptions,
-    tempDrawCanvas?: HTMLCanvasElement | null
+    tempDrawCanvas?: HTMLCanvasElement | null,
+    shapePreview?: ShapePreview | null
   ): void {
     const ctx = screenCanvas.getContext('2d');
     if (!ctx) return;
@@ -124,7 +137,7 @@ export class LumoraEngine {
       ctx.restore();
     }
 
-    // If an active in-progress stroke / shape / preview canvas exists, render it
+    // If an active in-progress stroke exists on active layer, render it
     if (tempDrawCanvas && doc.activeLayerId) {
       const activeLayer = doc.layers.find((l) => l.id === doc.activeLayerId);
       if (activeLayer && activeLayer.visible) {
@@ -136,6 +149,30 @@ export class LumoraEngine {
       }
     }
 
+    // If an in-progress shape preview exists, render it cleanly in document space
+    if (shapePreview) {
+      ctx.save();
+      ctx.translate(docX + shapePreview.x, docY + shapePreview.y);
+      this.renderShapeLayer(ctx, {
+        width: shapePreview.width,
+        height: shapePreview.height,
+        shapeConfig: {
+          shapeType: shapePreview.shapeType,
+          fill: shapePreview.fill,
+          stroke: shapePreview.stroke,
+          strokeWidth: shapePreview.strokeWidth,
+          cornerRadius: shapePreview.cornerRadius
+        }
+      } as any);
+
+      // Interactive dashed bounding guide
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.2 / doc.zoom;
+      ctx.setLineDash([4 / doc.zoom, 4 / doc.zoom]);
+      ctx.strokeRect(0, 0, shapePreview.width, shapePreview.height);
+      ctx.restore();
+    }
+
     ctx.restore(); // Restore document clipping
 
     // 7. Draw Document Thin Border Outline
@@ -143,13 +180,16 @@ export class LumoraEngine {
     ctx.lineWidth = 1 / doc.zoom;
     ctx.strokeRect(docX, docY, doc.width, doc.height);
 
-    // 8. Draw Transform Controls for Active Layer (if Move tool or Show Transform Controls is active)
+    // 8. Draw Transform Controls for Active Layer (Move tool, active shape/text, or Show Transform Controls)
     const activeLayer = doc.layers.find((l) => l.id === doc.activeLayerId);
     if (
       activeLayer &&
       activeLayer.visible &&
       !activeLayer.locked &&
-      (activeTool === 'move' || toolOptions.move.showTransformControls)
+      (activeTool === 'move' ||
+        (activeTool === 'shape' && activeLayer.type === 'shape') ||
+        (activeTool === 'text' && activeLayer.type === 'text') ||
+        toolOptions.move.showTransformControls)
     ) {
       this.renderTransformHandles(ctx, doc, activeLayer, docX, docY);
     }
@@ -228,6 +268,7 @@ export class LumoraEngine {
   public static renderShapeLayer(ctx: CanvasRenderingContext2D, layer: Layer): void {
     if (!layer.shapeConfig) return;
     const { shapeType, fill, stroke, strokeWidth } = layer.shapeConfig;
+    const radius = layer.shapeConfig.cornerRadius || 0;
 
     ctx.save();
     ctx.fillStyle = fill;
@@ -236,22 +277,63 @@ export class LumoraEngine {
 
     ctx.beginPath();
     if (shapeType === 'rect') {
-      ctx.rect(0, 0, layer.width, layer.height);
-      if (fill && fill !== 'transparent') ctx.fill();
-      if (stroke && strokeWidth > 0) ctx.stroke();
+      if (radius > 0 && typeof (ctx as any).roundRect === 'function') {
+        const safeRadius = Math.min(radius, Math.abs(layer.width) / 2, Math.abs(layer.height) / 2);
+        (ctx as any).roundRect(0, 0, layer.width, layer.height, safeRadius);
+      } else {
+        ctx.rect(0, 0, layer.width, layer.height);
+      }
+      if (fill && fill !== 'transparent' && fill !== 'none') ctx.fill();
+      if (stroke && stroke !== 'transparent' && stroke !== 'none' && strokeWidth > 0) ctx.stroke();
     } else if (shapeType === 'circle') {
       const rx = layer.width / 2;
       const ry = layer.height / 2;
       ctx.ellipse(rx, ry, Math.abs(rx), Math.abs(ry), 0, 0, Math.PI * 2);
-      if (fill && fill !== 'transparent') ctx.fill();
-      if (stroke && strokeWidth > 0) ctx.stroke();
+      if (fill && fill !== 'transparent' && fill !== 'none') ctx.fill();
+      if (stroke && stroke !== 'transparent' && stroke !== 'none' && strokeWidth > 0) ctx.stroke();
     } else if (shapeType === 'line') {
       ctx.moveTo(0, 0);
       ctx.lineTo(layer.width, layer.height);
-      if (stroke && strokeWidth > 0) ctx.stroke();
+      if (stroke && stroke !== 'transparent' && stroke !== 'none' && strokeWidth > 0) ctx.stroke();
     }
 
     ctx.restore();
+  }
+
+  /**
+   * Synchronize the offscreen canvas pixel buffer of a shape layer
+   */
+  public static updateShapeRasterCanvas(layer: Layer): void {
+    if (layer.type !== 'shape' || !layer.shapeConfig) return;
+    const w = Math.max(1, Math.round(Math.abs(layer.width)));
+    const h = Math.max(1, Math.round(Math.abs(layer.height)));
+    if (!layer.canvas) {
+      layer.canvas = document.createElement('canvas');
+    }
+    layer.canvas.width = w;
+    layer.canvas.height = h;
+    const ctx = layer.canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, w, h);
+    this.renderShapeLayer(ctx, layer);
+  }
+
+  /**
+   * Synchronize the offscreen canvas pixel buffer of a text layer
+   */
+  public static updateTextRasterCanvas(layer: Layer): void {
+    if (layer.type !== 'text' || !layer.textConfig) return;
+    const w = Math.max(1, Math.round(Math.abs(layer.width)));
+    const h = Math.max(1, Math.round(Math.abs(layer.height)));
+    if (!layer.canvas) {
+      layer.canvas = document.createElement('canvas');
+    }
+    layer.canvas.width = w;
+    layer.canvas.height = h;
+    const ctx = layer.canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, w, h);
+    this.renderTextLayer(ctx, layer);
   }
 
   /**
@@ -342,8 +424,8 @@ export class LumoraEngine {
     // Layer position in doc
     const lx = docX + layer.x;
     const ly = docY + layer.y;
-    const lw = layer.width * (layer.scaleX || 1);
-    const lh = layer.height * (layer.scaleY || 1);
+    const lw = Math.max(1, Math.abs(layer.width * (layer.scaleX || 1)));
+    const lh = Math.max(1, Math.abs(layer.height * (layer.scaleY || 1)));
 
     // Transform relative to layer top-left
     let relX = clickDocX - lx;
@@ -361,8 +443,8 @@ export class LumoraEngine {
       relY = dx * sin + dy * cos + cy;
     }
 
-    const tolerance = 10 / doc.zoom;
-    const rotDist = 20 / doc.zoom;
+    const tolerance = Math.max(8, 12 / doc.zoom);
+    const rotDist = 24 / doc.zoom;
 
     // Rotation handle
     if (Math.hypot(relX - lw / 2, relY - (-rotDist)) <= tolerance) return 'rot';

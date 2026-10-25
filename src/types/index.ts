@@ -39,6 +39,7 @@ export interface ShapeConfig {
   fill: string;
   stroke: string;
   strokeWidth: number;
+  cornerRadius?: number;
 }
 
 export interface LayerAdjustments {

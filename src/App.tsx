@@ -642,6 +642,29 @@ export const App: React.FC = () => {
 
   const activeLayer = doc ? doc.layers.find((l) => l.id === doc.activeLayerId) : undefined;
 
+  const handleToolOptionsChange = (newOpts: Partial<ToolOptions>) => {
+    setToolOptions((prev) => ({ ...prev, ...newOpts }));
+
+    // If activeColor was changed and an active shape/text layer exists, update its color
+    if (newOpts.activeColor && activeLayer) {
+      if (activeLayer.type === 'shape' && activeLayer.shapeConfig) {
+        const updated: Layer = {
+          ...activeLayer,
+          shapeConfig: { ...activeLayer.shapeConfig, fill: newOpts.activeColor }
+        };
+        LumoraEngine.updateShapeRasterCanvas(updated);
+        updateLayer(activeLayer.id, { shapeConfig: updated.shapeConfig, canvas: updated.canvas });
+      } else if (activeLayer.type === 'text' && activeLayer.textConfig) {
+        const updated: Layer = {
+          ...activeLayer,
+          textConfig: { ...activeLayer.textConfig, color: newOpts.activeColor }
+        };
+        LumoraEngine.updateTextRasterCanvas(updated);
+        updateLayer(activeLayer.id, { textConfig: updated.textConfig, canvas: updated.canvas });
+      }
+    }
+  };
+
   return (
     <div className="lumora-app">
       {/* Hidden File Pickers */}
@@ -694,7 +717,11 @@ export const App: React.FC = () => {
           <ToolOptionsBar
             activeTool={activeTool}
             options={toolOptions}
-            onOptionsChange={(newOpts) => setToolOptions((prev) => ({ ...prev, ...newOpts }))}
+            onOptionsChange={handleToolOptionsChange}
+            activeLayer={activeLayer}
+            onUpdateActiveLayer={(updates) => {
+              if (activeLayer) updateLayer(activeLayer.id, updates);
+            }}
             onApplyCrop={handleApplyCrop}
             onCancelCrop={handleCancelCrop}
             onFlipHorizontal={handleFlipHorizontal}
@@ -742,7 +769,7 @@ export const App: React.FC = () => {
             activeTool={activeTool}
             onSelectTool={setActiveTool}
             options={toolOptions}
-            onOptionsChange={(newOpts) => setToolOptions((prev) => ({ ...prev, ...newOpts }))}
+            onOptionsChange={handleToolOptionsChange}
           />
 
           {/* Central Viewport */}
