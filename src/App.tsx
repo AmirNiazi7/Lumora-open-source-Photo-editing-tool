@@ -676,6 +676,15 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleColorSampled = (col: string) => {
+    handleToolOptionsChange({
+      activeColor: col,
+      brush: { ...toolOptions.brush, color: col },
+      text: { ...toolOptions.text, color: col },
+      shape: { ...toolOptions.shape, fill: col }
+    });
+  };
+
   return (
     <div className="lumora-app">
       {/* Hidden File Pickers */}
@@ -810,15 +819,7 @@ export const App: React.FC = () => {
                 onAddLayer={addLayer}
                 onRecordHistory={recordHistory}
                 onSelectLayer={(id) => updateDocument({ activeLayerId: id })}
-                onColorSampled={(col) =>
-                  setToolOptions((prev) => ({
-                    ...prev,
-                    activeColor: col,
-                    brush: { ...prev.brush, color: col },
-                    text: { ...prev.text, color: col },
-                    shape: { ...prev.shape, fill: col }
-                  }))
-                }
+                onColorSampled={handleColorSampled}
                 cropRect={cropRect}
                 onCropRectChange={setCropRect}
                 onOpenProjectFile={handleOpenProjectOrPsdFile}

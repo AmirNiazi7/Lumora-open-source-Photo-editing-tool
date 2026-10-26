@@ -43,7 +43,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
 
   // Dragging and interaction state
   const isInteracting = useRef(false);
-  const interactionMode = useRef<'pan' | 'transform' | 'brush' | 'eraser' | 'shape' | 'crop' | 'select' | null>(null);
+  const interactionMode = useRef<'pan' | 'transform' | 'brush' | 'eraser' | 'shape' | 'crop' | 'select' | 'eyedropper' | null>(null);
   const activeHandle = useRef<TransformHandle>(null);
   const transformLayerId = useRef<string | null>(null);
 
@@ -53,6 +53,9 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
   const startLayerState = useRef<{ x: number; y: number; width: number; height: number; rotation: number } | null>(null);
   const startDocPan = useRef({ panX: 0, panY: 0 });
   const spacePressed = useRef(false);
+
+  // Real-time eyedropper sampling loupe preview
+  const [samplingLoupe, setSamplingLoupe] = useState<{ x: number; y: number; color: string; r: number; g: number; b: number } | null>(null);
 
   // Offscreen temporary canvas for brush/eraser strokes
   const tempCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -74,6 +77,8 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
   onUpdateLayerRef.current = onUpdateLayer;
   const onUpdateDocumentRef = useRef(onUpdateDocument);
   onUpdateDocumentRef.current = onUpdateDocument;
+  const onColorSampledRef = useRef(onColorSampled);
+  onColorSampledRef.current = onColorSampled;
 
   // Setup / Resize Viewport Canvas
   const resizeCanvas = useCallback(() => {
@@ -238,8 +243,9 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
 
     // Check for Eyedropper tool
     if (activeTool === 'eyedropper') {
+      isInteracting.current = true;
+      interactionMode.current = 'eyedropper';
       sampleColorAtScreenPos(screenPos.x, screenPos.y);
-      isInteracting.current = false;
       return;
     }
 
@@ -539,6 +545,9 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
       onRecordHistory('Eraser Stroke');
     } else if (interactionMode.current === 'shape') {
       commitShapeLayer();
+    } else if (interactionMode.current === 'eyedropper') {
+      setSamplingLoupe(null);
+      onRecordHistory('Sample Color');
     } else if (interactionMode.current === 'select') {
       // Marquee selection remains active
       resizeCanvas();
@@ -553,20 +562,38 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
     resizeCanvas();
   };
 
-  // Eyedropper Color Sampler
+  // Eyedropper Color Sampler - directly samples the rendered screen canvas pixel
   const sampleColorAtScreenPos = (screenX: number, screenY: number) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const docCoords = LumoraEngine.screenToDocumentCoords(screenX, screenY, rect.width, rect.height, doc);
+    if (!containerRef.current || !canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return;
 
-    const merged = LumoraEngine.renderMergedCanvas(doc);
-    const mctx = merged.getContext('2d');
-    if (!mctx) return;
+    const dpr = window.devicePixelRatio || 1;
+    const canvasX = Math.round(screenX * dpr);
+    const canvasY = Math.round(screenY * dpr);
 
-    if (docCoords.docX >= 0 && docCoords.docX < doc.width && docCoords.docY >= 0 && docCoords.docY < doc.height) {
-      const pixel = mctx.getImageData(docCoords.docX, docCoords.docY, 1, 1).data;
-      const hex = `#${((1 << 24) + (pixel[0] << 16) + (pixel[1] << 8) + pixel[2]).toString(16).slice(1)}`;
-      onColorSampled(hex);
+    if (canvasX >= 0 && canvasX < canvas.width && canvasY >= 0 && canvasY < canvas.height) {
+      try {
+        const pixel = ctx.getImageData(canvasX, canvasY, 1, 1).data;
+        const r = pixel[0];
+        const g = pixel[1];
+        const b = pixel[2];
+        const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}`;
+
+        setSamplingLoupe({
+          x: screenX,
+          y: screenY,
+          color: hex,
+          r,
+          g,
+          b
+        });
+
+        onColorSampledRef.current(hex);
+      } catch (err) {
+        console.warn('Eyedropper pixel read error:', err);
+      }
     }
   };
 
@@ -833,6 +860,9 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
           panY: startDocPan.current.panY + totalDy
         });
         lastMousePos.current = screenPos;
+      } else if (interactionMode.current === 'eyedropper') {
+        sampleColorAtScreenPos(screenPos.x, screenPos.y);
+        lastMousePos.current = screenPos;
       } else if (interactionMode.current === 'transform' && startLayerState.current) {
         const targetId = transformLayerId.current || currentActiveLayer?.id;
         const target = currentDoc.layers.find((l) => l.id === targetId);
@@ -1005,6 +1035,57 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
       onDrop={handleDrop}
     >
       <canvas ref={canvasRef} className="viewport-canvas" />
+
+      {/* Real-time Eyedropper Sampling Loupe */}
+      {samplingLoupe && (
+        <div
+          style={{
+            position: 'absolute',
+            left: `${samplingLoupe.x}px`,
+            top: `${samplingLoupe.y}px`,
+            transform: 'translate(-50%, -125%)',
+            pointerEvents: 'none',
+            zIndex: 100,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '4px'
+          }}
+        >
+          {/* Circular sampling ring */}
+          <div
+            style={{
+              width: '42px',
+              height: '42px',
+              borderRadius: '50%',
+              backgroundColor: samplingLoupe.color,
+              border: '3px solid #ffffff',
+              boxShadow: '0 4px 14px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(0,0,0,0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          />
+          {/* High-contrast HEX badge */}
+          <div
+            style={{
+              backgroundColor: '#181818',
+              color: '#ffffff',
+              fontSize: '11px',
+              fontFamily: 'monospace',
+              fontWeight: 700,
+              padding: '2px 8px',
+              borderRadius: '4px',
+              border: '1px solid #444',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
+              whiteSpace: 'nowrap',
+              letterSpacing: '0.5px'
+            }}
+          >
+            {samplingLoupe.color}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

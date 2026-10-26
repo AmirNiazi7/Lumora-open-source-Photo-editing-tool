@@ -20,7 +20,8 @@ import {
   FlipVertical,
   RotateCw,
   Ban,
-  Move
+  Move,
+  Pipette
 } from 'lucide-react';
 
 interface ToolOptionsBarProps {
@@ -194,6 +195,26 @@ export const ToolOptionsBar: React.FC<ToolOptionsBarProps> = ({
                 style={{ width: '22px', height: '22px', border: 'none', background: 'none', cursor: 'pointer' }}
                 title="Choose Fill Color"
               />
+            )}
+
+            {typeof window !== 'undefined' && 'EyeDropper' in window && (
+              <button
+                className="layer-action-btn"
+                style={{ fontSize: '10px', padding: '2px 5px' }}
+                title="Pick Color from Screen"
+                onClick={async () => {
+                  try {
+                    const eyeDropper = new (window as any).EyeDropper();
+                    const result = await eyeDropper.open();
+                    if (result && result.sRGBHex) {
+                      handleShapeUpdate({ fill: result.sRGBHex });
+                      onOptionsChange({ activeColor: result.sRGBHex });
+                    }
+                  } catch {}
+                }}
+              >
+                <Pipette size={10} style={{ marginRight: '2px' }} /> Pick
+              </button>
             )}
 
             <button
@@ -762,7 +783,103 @@ export const ToolOptionsBar: React.FC<ToolOptionsBarProps> = ({
 
       {/* 10. Eyedropper Options */}
       {activeTool === 'eyedropper' && (
-        <span className="option-label">Click anywhere on canvas to sample color into Foreground swatch</span>
+        <>
+          <div className="option-group">
+            <Pipette size={14} style={{ color: '#38bdf8' }} />
+            <span className="option-label" style={{ fontWeight: 600, color: '#e5e7eb' }}>
+              Sampled:
+            </span>
+            <div
+              style={{
+                width: '18px',
+                height: '18px',
+                borderRadius: '3px',
+                backgroundColor: options.activeColor,
+                border: '1px solid #666',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.5)'
+              }}
+              title={`Active Color: ${options.activeColor}`}
+            />
+            <span
+              style={{
+                fontFamily: 'monospace',
+                fontSize: '11px',
+                fontWeight: 700,
+                color: '#ffffff',
+                backgroundColor: '#262626',
+                padding: '2px 6px',
+                borderRadius: '3px',
+                border: '1px solid #444',
+                letterSpacing: '0.5px'
+              }}
+            >
+              {options.activeColor.toUpperCase()}
+            </span>
+          </div>
+
+          <div style={{ width: '1px', height: '16px', backgroundColor: '#444', margin: '0 4px' }} />
+
+          <div className="option-group">
+            <span className="option-label">Mode:</span>
+            <span
+              style={{
+                fontSize: '11px',
+                color: '#38bdf8',
+                backgroundColor: '#1e293b',
+                padding: '2px 6px',
+                borderRadius: '3px',
+                border: '1px solid #0284c7'
+              }}
+            >
+              Click or Drag on Canvas to Sample
+            </span>
+          </div>
+
+          {activeLayer && (activeLayer.type === 'shape' || activeLayer.type === 'text') && (
+            <>
+              <div style={{ width: '1px', height: '16px', backgroundColor: '#444', margin: '0 6px' }} />
+              <div className="option-group">
+                <span className="option-label" style={{ color: '#93c5fd', whiteSpace: 'nowrap' }}>
+                  Target: {activeLayer.name} ({activeLayer.type === 'shape' ? 'Fill' : 'Color'})
+                </span>
+              </div>
+            </>
+          )}
+
+          {typeof window !== 'undefined' && 'EyeDropper' in window && (
+            <>
+              <div style={{ width: '1px', height: '16px', backgroundColor: '#444', margin: '0 6px' }} />
+              <button
+                className="layer-action-btn"
+                style={{ fontSize: '11px', padding: '2px 8px', color: '#67e8f9', border: '1px solid #0891b2', whiteSpace: 'nowrap' }}
+                title="Sample any color from anywhere on your desktop screen"
+                onClick={async () => {
+                  try {
+                    const eyeDropper = new (window as any).EyeDropper();
+                    const result = await eyeDropper.open();
+                    if (result && result.sRGBHex) {
+                      onOptionsChange({
+                        activeColor: result.sRGBHex,
+                        brush: { ...options.brush, color: result.sRGBHex },
+                        text: { ...options.text, color: result.sRGBHex },
+                        shape: { ...options.shape, fill: result.sRGBHex }
+                      });
+                      if (activeLayer && activeLayer.type === 'shape') {
+                        handleShapeUpdate({ fill: result.sRGBHex });
+                      } else if (activeLayer && activeLayer.type === 'text') {
+                        handleTextUpdate({ color: result.sRGBHex });
+                      }
+                    }
+                  } catch {
+                    // user cancelled
+                  }
+                }}
+              >
+                <Pipette size={11} style={{ marginRight: '4px' }} /> Pick From Screen
+              </button>
+            </>
+          )}
+        </>
       )}
     </div>
   );
