@@ -64,6 +64,17 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
   // Active layer shortcut
   const activeLayer = doc.layers.find((l) => l.id === doc.activeLayerId);
 
+  const docRef = useRef(doc);
+  docRef.current = doc;
+  const activeLayerRef = useRef(activeLayer);
+  activeLayerRef.current = activeLayer;
+  const toolOptionsRef = useRef(toolOptions);
+  toolOptionsRef.current = toolOptions;
+  const onUpdateLayerRef = useRef(onUpdateLayer);
+  onUpdateLayerRef.current = onUpdateLayer;
+  const onUpdateDocumentRef = useRef(onUpdateDocument);
+  onUpdateDocumentRef.current = onUpdateDocument;
+
   // Setup / Resize Viewport Canvas
   const resizeCanvas = useCallback(() => {
     if (!containerRef.current || !canvasRef.current) return;
@@ -198,15 +209,16 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
   };
 
   // Pointer Down
+  // Pointer Down
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!containerRef.current) return;
     const screenPos = getScreenPos(e);
     startMousePos.current = screenPos;
     lastMousePos.current = screenPos;
-    isInteracting.current = true;
 
     // Check for Hand tool or Space+Pan
     if (activeTool === 'hand' || spacePressed.current || e.button === 1) {
+      isInteracting.current = true;
       interactionMode.current = 'pan';
       startDocPan.current = { panX: doc.panX, panY: doc.panY };
       if (containerRef.current) containerRef.current.style.cursor = 'grabbing';
@@ -247,6 +259,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
         if (handle && handle !== 'move') {
           activeHandle.current = handle;
           transformLayerId.current = activeLayer.id;
+          isInteracting.current = true;
           interactionMode.current = 'transform';
           startLayerState.current = {
             x: activeLayer.x,
@@ -279,6 +292,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
             onSelectLayer(l.id);
             activeHandle.current = handle;
             transformLayerId.current = l.id;
+            isInteracting.current = true;
             interactionMode.current = 'transform';
             startLayerState.current = {
               x: l.x,
@@ -302,6 +316,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
         if (handle) {
           activeHandle.current = handle;
           transformLayerId.current = activeLayer.id;
+          isInteracting.current = true;
           interactionMode.current = 'transform';
           startLayerState.current = {
             x: activeLayer.x,
@@ -313,6 +328,11 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
           return;
         }
       }
+
+      // If Move tool clicked empty space without hitting any layer or handle, do not interact
+      isInteracting.current = false;
+      interactionMode.current = null;
+      return;
     }
 
     // Check for Text tool click
@@ -421,6 +441,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
         onSelectLayer(newLayer.id);
         targetLayer = newLayer;
       }
+      isInteracting.current = true;
       interactionMode.current = 'brush';
       initTempDrawCanvas(targetLayer);
       drawStroke(screenPos, screenPos, true, targetLayer);
@@ -434,6 +455,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
         isInteracting.current = false;
         return;
       }
+      isInteracting.current = true;
       interactionMode.current = 'eraser';
       erasePixels(screenPos, screenPos);
       return;
@@ -441,6 +463,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
 
     // Check for Marquee Selection Tool
     if (activeTool === 'select') {
+      isInteracting.current = true;
       interactionMode.current = 'select';
       marqueeRectRef.current = null;
       return;
@@ -456,6 +479,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
         if (handle) {
           activeHandle.current = handle;
           transformLayerId.current = activeLayer.id;
+          isInteracting.current = true;
           interactionMode.current = 'transform';
           startLayerState.current = {
             x: activeLayer.x,
@@ -477,6 +501,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
             onSelectLayer(l.id);
             activeHandle.current = handle;
             transformLayerId.current = l.id;
+            isInteracting.current = true;
             interactionMode.current = 'transform';
             startLayerState.current = { x: l.x, y: l.y, width: l.width, height: l.height, rotation: l.rotation };
             return;
@@ -485,160 +510,19 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
       }
 
       // Otherwise, prepare to draw a brand new shape
+      isInteracting.current = true;
       interactionMode.current = 'shape';
       shapePreviewRef.current = null;
       return;
     }
   };
 
-  // Pointer Move
+  // Pointer Move (Container Hover - only when not actively dragging)
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!containerRef.current) return;
-    const screenPos = getScreenPos(e);
-
-    // Update dynamic cursor if not interacting
     if (!isInteracting.current) {
+      const screenPos = getScreenPos(e);
       updateHoverCursor(screenPos);
-      return;
-    }
-
-    const dx = screenPos.x - lastMousePos.current.x;
-    const dy = screenPos.y - lastMousePos.current.y;
-    const totalDx = screenPos.x - startMousePos.current.x;
-    const totalDy = screenPos.y - startMousePos.current.y;
-
-    // Pan Mode
-    if (interactionMode.current === 'pan') {
-      onUpdateDocument({
-        panX: startDocPan.current.panX + totalDx,
-        panY: startDocPan.current.panY + totalDy
-      });
-      lastMousePos.current = screenPos;
-      return;
-    }
-
-    // Transform Mode (Move, Resize, Rotate layer)
-    if (interactionMode.current === 'transform' && startLayerState.current) {
-      const targetId = transformLayerId.current || activeLayer?.id;
-      const target = doc.layers.find((l) => l.id === targetId);
-      if (!target) return;
-
-      const handle = activeHandle.current;
-      const docDx = totalDx / doc.zoom;
-      const docDy = totalDy / doc.zoom;
-
-      if (handle === 'move') {
-        onUpdateLayer(target.id, {
-          x: Math.round(startLayerState.current.x + docDx),
-          y: Math.round(startLayerState.current.y + docDy)
-        });
-      } else if (handle === 'rot') {
-        // Rotation handle
-        const rect = containerRef.current.getBoundingClientRect();
-        const docCoords = LumoraEngine.screenToDocumentCoords(screenPos.x, screenPos.y, rect.width, rect.height, doc);
-        const layerCenterX = target.x + target.width / 2;
-        const layerCenterY = target.y + target.height / 2;
-        const angle = Math.atan2(docCoords.docY - layerCenterY, docCoords.docX - layerCenterX);
-        const degrees = Math.round((angle * 180) / Math.PI + 90);
-        onUpdateLayer(target.id, { rotation: (degrees + 360) % 360 });
-      } else if (handle) {
-        // Resize handle
-        let newX = startLayerState.current.x;
-        let newY = startLayerState.current.y;
-        let newW = startLayerState.current.width;
-        let newH = startLayerState.current.height;
-
-        if (handle.includes('e')) newW = Math.max(10, startLayerState.current.width + docDx);
-        if (handle.includes('s')) newH = Math.max(10, startLayerState.current.height + docDy);
-        if (handle.includes('w')) {
-          const delta = Math.min(docDx, startLayerState.current.width - 10);
-          newX = startLayerState.current.x + delta;
-          newW = startLayerState.current.width - delta;
-        }
-        if (handle.includes('n')) {
-          const delta = Math.min(docDy, startLayerState.current.height - 10);
-          newY = startLayerState.current.y + delta;
-          newH = startLayerState.current.height - delta;
-        }
-
-        const updates: Partial<Layer> = {
-          x: Math.round(newX),
-          y: Math.round(newY),
-          width: Math.round(newW),
-          height: Math.round(newH)
-        };
-
-        if (target.type === 'shape') {
-          const updatedLayer = { ...target, ...updates };
-          LumoraEngine.updateShapeRasterCanvas(updatedLayer);
-          updates.canvas = updatedLayer.canvas;
-        }
-
-        onUpdateLayer(target.id, updates);
-      }
-
-      resizeCanvas();
-      lastMousePos.current = screenPos;
-      return;
-    }
-
-    // Brush Mode
-    if (interactionMode.current === 'brush') {
-      drawStroke(lastMousePos.current, screenPos, false);
-      lastMousePos.current = screenPos;
-      return;
-    }
-
-    // Eraser Mode
-    if (interactionMode.current === 'eraser') {
-      erasePixels(lastMousePos.current, screenPos);
-      lastMousePos.current = screenPos;
-      return;
-    }
-
-    // Shape Drawing Preview Mode
-    if (interactionMode.current === 'shape') {
-      const rect = containerRef.current.getBoundingClientRect();
-      const startDoc = LumoraEngine.screenToDocumentCoords(startMousePos.current.x, startMousePos.current.y, rect.width, rect.height, doc);
-      const currDoc = LumoraEngine.screenToDocumentCoords(screenPos.x, screenPos.y, rect.width, rect.height, doc);
-
-      const x = Math.min(startDoc.docX, currDoc.docX);
-      const y = Math.min(startDoc.docY, currDoc.docY);
-      const w = Math.max(2, Math.abs(currDoc.docX - startDoc.docX));
-      const h = Math.max(2, Math.abs(currDoc.docY - startDoc.docY));
-
-      shapePreviewRef.current = {
-        x,
-        y,
-        width: w,
-        height: h,
-        shapeType: toolOptions.shape.shapeType,
-        fill: toolOptions.shape.fill,
-        stroke: toolOptions.shape.stroke,
-        strokeWidth: toolOptions.shape.strokeWidth,
-        cornerRadius: toolOptions.shape.cornerRadius || 0
-      };
-
-      resizeCanvas();
-      lastMousePos.current = screenPos;
-      return;
-    }
-
-    // Marquee Selection Mode
-    if (interactionMode.current === 'select') {
-      const rect = containerRef.current.getBoundingClientRect();
-      const startDoc = LumoraEngine.screenToDocumentCoords(startMousePos.current.x, startMousePos.current.y, rect.width, rect.height, doc);
-      const currDoc = LumoraEngine.screenToDocumentCoords(screenPos.x, screenPos.y, rect.width, rect.height, doc);
-
-      const x = Math.min(startDoc.docX, currDoc.docX);
-      const y = Math.min(startDoc.docY, currDoc.docY);
-      const w = Math.max(1, Math.abs(currDoc.docX - startDoc.docX));
-      const h = Math.max(1, Math.abs(currDoc.docY - startDoc.docY));
-
-      marqueeRectRef.current = { x, y, width: w, height: h };
-      resizeCanvas();
-      lastMousePos.current = screenPos;
-      return;
     }
   };
 
@@ -940,36 +824,39 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
         y: e.clientY - rect.top
       };
 
+      const currentDoc = docRef.current;
+      const currentToolOptions = toolOptionsRef.current;
+      const currentActiveLayer = activeLayerRef.current;
       const totalDx = screenPos.x - startMousePos.current.x;
       const totalDy = screenPos.y - startMousePos.current.y;
 
       if (interactionMode.current === 'pan') {
-        onUpdateDocument({
+        onUpdateDocumentRef.current({
           panX: startDocPan.current.panX + totalDx,
           panY: startDocPan.current.panY + totalDy
         });
         lastMousePos.current = screenPos;
       } else if (interactionMode.current === 'transform' && startLayerState.current) {
-        const targetId = transformLayerId.current || activeLayer?.id;
-        const target = doc.layers.find((l) => l.id === targetId);
+        const targetId = transformLayerId.current || currentActiveLayer?.id;
+        const target = currentDoc.layers.find((l) => l.id === targetId);
         if (!target) return;
 
         const handle = activeHandle.current;
-        const docDx = totalDx / doc.zoom;
-        const docDy = totalDy / doc.zoom;
+        const docDx = totalDx / currentDoc.zoom;
+        const docDy = totalDy / currentDoc.zoom;
 
         if (handle === 'move') {
-          onUpdateLayer(target.id, {
+          onUpdateLayerRef.current(target.id, {
             x: Math.round(startLayerState.current.x + docDx),
             y: Math.round(startLayerState.current.y + docDy)
           });
         } else if (handle === 'rot') {
-          const docCoords = LumoraEngine.screenToDocumentCoords(screenPos.x, screenPos.y, rect.width, rect.height, doc);
+          const docCoords = LumoraEngine.screenToDocumentCoords(screenPos.x, screenPos.y, rect.width, rect.height, currentDoc);
           const layerCenterX = target.x + target.width / 2;
           const layerCenterY = target.y + target.height / 2;
           const angle = Math.atan2(docCoords.docY - layerCenterY, docCoords.docX - layerCenterX);
           const degrees = Math.round((angle * 180) / Math.PI + 90);
-          onUpdateLayer(target.id, { rotation: (degrees + 360) % 360 });
+          onUpdateLayerRef.current(target.id, { rotation: (degrees + 360) % 360 });
         } else if (handle) {
           let newX = startLayerState.current.x;
           let newY = startLayerState.current.y;
@@ -1000,14 +887,14 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
             LumoraEngine.updateShapeRasterCanvas(updated);
             updates.canvas = updated.canvas;
           }
-          onUpdateLayer(target.id, updates);
+          onUpdateLayerRef.current(target.id, updates);
         }
 
         resizeCanvas();
         lastMousePos.current = screenPos;
       } else if (interactionMode.current === 'shape') {
-        const startDoc = LumoraEngine.screenToDocumentCoords(startMousePos.current.x, startMousePos.current.y, rect.width, rect.height, doc);
-        const currDoc = LumoraEngine.screenToDocumentCoords(screenPos.x, screenPos.y, rect.width, rect.height, doc);
+        const startDoc = LumoraEngine.screenToDocumentCoords(startMousePos.current.x, startMousePos.current.y, rect.width, rect.height, currentDoc);
+        const currDoc = LumoraEngine.screenToDocumentCoords(screenPos.x, screenPos.y, rect.width, rect.height, currentDoc);
         const x = Math.min(startDoc.docX, currDoc.docX);
         const y = Math.min(startDoc.docY, currDoc.docY);
         const w = Math.max(2, Math.abs(currDoc.docX - startDoc.docX));
@@ -1018,17 +905,17 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
           y,
           width: w,
           height: h,
-          shapeType: toolOptions.shape.shapeType,
-          fill: toolOptions.shape.fill,
-          stroke: toolOptions.shape.stroke,
-          strokeWidth: toolOptions.shape.strokeWidth,
-          cornerRadius: toolOptions.shape.cornerRadius || 0
+          shapeType: currentToolOptions.shape.shapeType,
+          fill: currentToolOptions.shape.fill,
+          stroke: currentToolOptions.shape.stroke,
+          strokeWidth: currentToolOptions.shape.strokeWidth,
+          cornerRadius: currentToolOptions.shape.cornerRadius || 0
         };
         resizeCanvas();
         lastMousePos.current = screenPos;
       } else if (interactionMode.current === 'select') {
-        const startDoc = LumoraEngine.screenToDocumentCoords(startMousePos.current.x, startMousePos.current.y, rect.width, rect.height, doc);
-        const currDoc = LumoraEngine.screenToDocumentCoords(screenPos.x, screenPos.y, rect.width, rect.height, doc);
+        const startDoc = LumoraEngine.screenToDocumentCoords(startMousePos.current.x, startMousePos.current.y, rect.width, rect.height, currentDoc);
+        const currDoc = LumoraEngine.screenToDocumentCoords(screenPos.x, screenPos.y, rect.width, rect.height, currentDoc);
         const x = Math.min(startDoc.docX, currDoc.docX);
         const y = Math.min(startDoc.docY, currDoc.docY);
         const w = Math.max(1, Math.abs(currDoc.docX - startDoc.docX));
@@ -1036,6 +923,12 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
 
         marqueeRectRef.current = { x, y, width: w, height: h };
         resizeCanvas();
+        lastMousePos.current = screenPos;
+      } else if (interactionMode.current === 'brush') {
+        drawStroke(lastMousePos.current, screenPos, false);
+        lastMousePos.current = screenPos;
+      } else if (interactionMode.current === 'eraser') {
+        erasePixels(lastMousePos.current, screenPos);
         lastMousePos.current = screenPos;
       }
     };
@@ -1052,7 +945,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
       window.removeEventListener('mousemove', handleWindowMouseMove);
       window.removeEventListener('mouseup', handleWindowMouseUp);
     };
-  }, [doc, activeLayer, toolOptions, resizeCanvas, onUpdateDocument, onUpdateLayer]);
+  }, [resizeCanvas]);
 
   // Drag and Drop File Import
   const handleDragOver = (e: React.DragEvent) => {

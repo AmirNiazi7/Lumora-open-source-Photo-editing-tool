@@ -101,13 +101,7 @@ export class LumoraEngine {
       }
     }
 
-    // 5. Clip rendering to document bounds
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(docX, docY, doc.width, doc.height);
-    ctx.clip();
-
-    // 6. Composite Layers from bottom to top
+    // 5. Composite Layers from bottom to top (rendered across viewport pasteboard)
     for (const layer of doc.layers) {
       if (!layer.visible) continue;
 
@@ -188,11 +182,9 @@ export class LumoraEngine {
       ctx.restore();
     }
 
-    ctx.restore(); // Restore document clipping
-
-    // 7. Draw Document Thin Border Outline
-    ctx.strokeStyle = '#3e3e3e';
-    ctx.lineWidth = 1 / doc.zoom;
+    // 6. Draw Document Border Outline
+    ctx.strokeStyle = '#4a4a4a';
+    ctx.lineWidth = 1.5 / doc.zoom;
     ctx.strokeRect(docX, docY, doc.width, doc.height);
 
     // 8. Draw Transform Controls for Active Layer (Move tool, active shape/text, or Show Transform Controls)
@@ -487,8 +479,13 @@ export class LumoraEngine {
     if (Math.hypot(relX - lw / 2, relY - lh) <= tolerance) return 's';
     if (Math.hypot(relX, relY - lh / 2) <= tolerance) return 'w';
 
-    // Body move
-    if (relX >= 0 && relX <= lw && relY >= 0 && relY <= lh) {
+    // Body move (with border tolerance)
+    if (
+      relX >= -6 / doc.zoom &&
+      relX <= lw + 6 / doc.zoom &&
+      relY >= -6 / doc.zoom &&
+      relY <= lh + 6 / doc.zoom
+    ) {
       return 'move';
     }
 

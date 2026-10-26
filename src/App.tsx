@@ -357,6 +357,17 @@ export const App: React.FC = () => {
       adjustments: defaultAdjustments()
     };
 
+    let initialZoom = 1.0;
+    const container = typeof window !== 'undefined' ? window.document.querySelector('.viewport-canvas-container') : null;
+    if (container) {
+      const rect = container.getBoundingClientRect();
+      const margin = 80;
+      const fitZoom = Math.min((rect.width - margin) / width, (rect.height - margin) / height, 1.0);
+      initialZoom = Math.max(0.1, Number(fitZoom.toFixed(2)));
+    } else {
+      initialZoom = Math.min(1.0, Number((560 / height).toFixed(2)));
+    }
+
     const newDoc: DocumentProject = {
       id: 'doc_' + Date.now(),
       name,
@@ -366,7 +377,7 @@ export const App: React.FC = () => {
       background,
       layers: [bgLayer],
       activeLayerId: bgLayer.id,
-      zoom: 1.0,
+      zoom: initialZoom,
       panX: 0,
       panY: 0
     };
