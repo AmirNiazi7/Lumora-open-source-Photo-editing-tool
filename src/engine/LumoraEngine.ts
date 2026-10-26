@@ -50,13 +50,19 @@ export class LumoraEngine {
     toolOptions: ToolOptions,
     tempDrawCanvas?: HTMLCanvasElement | null,
     shapePreview?: ShapePreview | null,
-    marqueeRect?: { x: number; y: number; width: number; height: number } | null
+    marqueeRect?: { x: number; y: number; width: number; height: number } | null,
+    viewportWidth?: number,
+    viewportHeight?: number
   ): void {
     const ctx = screenCanvas.getContext('2d');
     if (!ctx) return;
 
-    const viewWidth = screenCanvas.width;
-    const viewHeight = screenCanvas.height;
+    // Use logical CSS pixels for viewport dimensions so DPR scaling matches hitTestHandle
+    const dpr = window.devicePixelRatio || 1;
+    const viewWidth =
+      viewportWidth ?? (screenCanvas.clientWidth > 0 ? screenCanvas.clientWidth : screenCanvas.width / dpr);
+    const viewHeight =
+      viewportHeight ?? (screenCanvas.clientHeight > 0 ? screenCanvas.clientHeight : screenCanvas.height / dpr);
 
     // 1. Clear entire viewport with dark background (#181818)
     ctx.fillStyle = '#181818';

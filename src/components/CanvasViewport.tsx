@@ -81,8 +81,8 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
     const rect = containerRef.current.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
 
-    canvasRef.current.width = rect.width * dpr;
-    canvasRef.current.height = rect.height * dpr;
+    canvasRef.current.width = Math.round(rect.width * dpr);
+    canvasRef.current.height = Math.round(rect.height * dpr);
 
     const ctx = canvasRef.current.getContext('2d');
     if (ctx) {
@@ -92,14 +92,16 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
 
     LumoraEngine.renderViewport(
       canvasRef.current,
-      doc,
+      docRef.current,
       activeTool,
-      toolOptions,
+      toolOptionsRef.current,
       tempCanvasRef.current,
       shapePreviewRef.current,
-      marqueeRectRef.current
+      marqueeRectRef.current,
+      rect.width,
+      rect.height
     );
-  }, [doc, activeTool, toolOptions]);
+  }, [activeTool]);
 
   // Re-render when doc, tool, or options change
   useEffect(() => {
@@ -245,18 +247,18 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
     if (activeTool === 'move') {
       const rect = containerRef.current.getBoundingClientRect();
 
-      // Check handle on active layer first (if clicking one of the 8 resize/rotate handles, prioritize it!)
+      // Check handle or body on active layer first!
       if (activeLayer && activeLayer.visible && !activeLayer.locked) {
         const handle = LumoraEngine.hitTestHandle(
           screenPos.x,
           screenPos.y,
           rect.width,
           rect.height,
-          doc,
+          docRef.current,
           activeLayer
         );
 
-        if (handle && handle !== 'move') {
+        if (handle) {
           activeHandle.current = handle;
           transformLayerId.current = activeLayer.id;
           isInteracting.current = true;
@@ -279,13 +281,14 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
           if (!l.visible || l.locked) continue;
           // Never auto-select the Background layer if there are other layers
           if (l.name === 'Background' && doc.layers.length > 1) continue;
+          if (l.id === activeLayer?.id) continue; // Already checked activeLayer
 
           const handle = LumoraEngine.hitTestHandle(
             screenPos.x,
             screenPos.y,
             rect.width,
             rect.height,
-            doc,
+            docRef.current,
             l
           );
           if (handle) {
@@ -303,29 +306,6 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
             };
             return;
           }
-        }
-      } else if (activeLayer && activeLayer.visible && !activeLayer.locked) {
-        const handle = LumoraEngine.hitTestHandle(
-          screenPos.x,
-          screenPos.y,
-          rect.width,
-          rect.height,
-          doc,
-          activeLayer
-        );
-        if (handle) {
-          activeHandle.current = handle;
-          transformLayerId.current = activeLayer.id;
-          isInteracting.current = true;
-          interactionMode.current = 'transform';
-          startLayerState.current = {
-            x: activeLayer.x,
-            y: activeLayer.y,
-            width: activeLayer.width,
-            height: activeLayer.height,
-            rotation: activeLayer.rotation
-          };
-          return;
         }
       }
 
@@ -475,7 +455,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
 
       // If active layer is a shape, check if user clicked on its handles or body to transform/drag it!
       if (activeLayer && activeLayer.type === 'shape' && activeLayer.visible && !activeLayer.locked) {
-        const handle = LumoraEngine.hitTestHandle(screenPos.x, screenPos.y, rect.width, rect.height, doc, activeLayer);
+        const handle = LumoraEngine.hitTestHandle(screenPos.x, screenPos.y, rect.width, rect.height, docRef.current, activeLayer);
         if (handle) {
           activeHandle.current = handle;
           transformLayerId.current = activeLayer.id;
@@ -495,8 +475,8 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
       // Check if user clicked another shape layer
       for (let i = doc.layers.length - 1; i >= 0; i--) {
         const l = doc.layers[i];
-        if (l.type === 'shape' && l.visible && !l.locked) {
-          const handle = LumoraEngine.hitTestHandle(screenPos.x, screenPos.y, rect.width, rect.height, doc, l);
+        if (l.type === 'shape' && l.visible && !l.locked && l.id !== activeLayer?.id) {
+          const handle = LumoraEngine.hitTestHandle(screenPos.x, screenPos.y, rect.width, rect.height, docRef.current, l);
           if (handle) {
             onSelectLayer(l.id);
             activeHandle.current = handle;
@@ -533,7 +513,16 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
 
     if (interactionMode.current === 'transform') {
       const targetId = transformLayerId.current || activeLayer?.id;
-      const target = doc.layers.find((l) => l.id === targetId);
+      const target = docRef.current.layers.find((l) => l.id === targetId);
+      if (target) {
+        onUpdateLayerRef.current(target.id, {
+          x: target.x,
+          y: target.y,
+          width: target.width,
+          height: target.height,
+          rotation: target.rotation
+        });
+      }
       onRecordHistory(`Move / Transform ${target ? target.name : 'Layer'}`);
     } else if (interactionMode.current === 'brush' && activeLayer && tempCanvasRef.current) {
       // Commit stroke from tempCanvas to active layer canvas
@@ -676,8 +665,9 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
   const commitShapeLayer = () => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
-    const startDoc = LumoraEngine.screenToDocumentCoords(startMousePos.current.x, startMousePos.current.y, rect.width, rect.height, doc);
-    const endDoc = LumoraEngine.screenToDocumentCoords(lastMousePos.current.x, lastMousePos.current.y, rect.width, rect.height, doc);
+    const currentDoc = docRef.current;
+    const startDoc = LumoraEngine.screenToDocumentCoords(startMousePos.current.x, startMousePos.current.y, rect.width, rect.height, currentDoc);
+    const endDoc = LumoraEngine.screenToDocumentCoords(lastMousePos.current.x, lastMousePos.current.y, rect.width, rect.height, currentDoc);
 
     let x = Math.min(startDoc.docX, endDoc.docX);
     let y = Math.min(startDoc.docY, endDoc.docY);
@@ -701,7 +691,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
 
     const newShapeLayer: Layer = {
       id: 'shape_' + Date.now(),
-      name: `${typeLabel} ${doc.layers.filter((l) => l.type === 'shape').length + 1}`,
+      name: `${typeLabel} ${currentDoc.layers.filter((l) => l.type === 'shape').length + 1}`,
       type: 'shape',
       visible: true,
       locked: false,
@@ -737,9 +727,16 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
     onAddLayer(newShapeLayer);
     onSelectLayer(newShapeLayer.id);
     transformLayerId.current = newShapeLayer.id;
+    activeLayerRef.current = newShapeLayer;
+    docRef.current = {
+      ...currentDoc,
+      layers: [...currentDoc.layers, newShapeLayer],
+      activeLayerId: newShapeLayer.id
+    };
     shapePreviewRef.current = null;
     clearTempCanvas();
     onRecordHistory(`Add ${newShapeLayer.name}`);
+    resizeCanvas();
   };
 
   // Update Dynamic Cursor
@@ -846,17 +843,27 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
         const docDy = totalDy / currentDoc.zoom;
 
         if (handle === 'move') {
-          onUpdateLayerRef.current(target.id, {
-            x: Math.round(startLayerState.current.x + docDx),
-            y: Math.round(startLayerState.current.y + docDy)
-          });
+          const newX = Math.round(startLayerState.current.x + docDx);
+          const newY = Math.round(startLayerState.current.y + docDy);
+          target.x = newX;
+          target.y = newY;
+          if (activeLayerRef.current && activeLayerRef.current.id === target.id) {
+            activeLayerRef.current.x = newX;
+            activeLayerRef.current.y = newY;
+          }
+          onUpdateLayerRef.current(target.id, { x: newX, y: newY });
         } else if (handle === 'rot') {
           const docCoords = LumoraEngine.screenToDocumentCoords(screenPos.x, screenPos.y, rect.width, rect.height, currentDoc);
           const layerCenterX = target.x + target.width / 2;
           const layerCenterY = target.y + target.height / 2;
           const angle = Math.atan2(docCoords.docY - layerCenterY, docCoords.docX - layerCenterX);
           const degrees = Math.round((angle * 180) / Math.PI + 90);
-          onUpdateLayerRef.current(target.id, { rotation: (degrees + 360) % 360 });
+          const newRot = (degrees + 360) % 360;
+          target.rotation = newRot;
+          if (activeLayerRef.current && activeLayerRef.current.id === target.id) {
+            activeLayerRef.current.rotation = newRot;
+          }
+          onUpdateLayerRef.current(target.id, { rotation: newRot });
         } else if (handle) {
           let newX = startLayerState.current.x;
           let newY = startLayerState.current.y;
@@ -876,16 +883,32 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
             newH = startLayerState.current.height - delta;
           }
 
+          const newXRound = Math.round(newX);
+          const newYRound = Math.round(newY);
+          const newWRound = Math.round(newW);
+          const newHRound = Math.round(newH);
+
           const updates: Partial<Layer> = {
-            x: Math.round(newX),
-            y: Math.round(newY),
-            width: Math.round(newW),
-            height: Math.round(newH)
+            x: newXRound,
+            y: newYRound,
+            width: newWRound,
+            height: newHRound
           };
+          target.x = newXRound;
+          target.y = newYRound;
+          target.width = newWRound;
+          target.height = newHRound;
+          if (activeLayerRef.current && activeLayerRef.current.id === target.id) {
+            activeLayerRef.current.x = newXRound;
+            activeLayerRef.current.y = newYRound;
+            activeLayerRef.current.width = newWRound;
+            activeLayerRef.current.height = newHRound;
+          }
           if (target.type === 'shape') {
             const updated = { ...target, ...updates };
             LumoraEngine.updateShapeRasterCanvas(updated);
             updates.canvas = updated.canvas;
+            target.canvas = updated.canvas;
           }
           onUpdateLayerRef.current(target.id, updates);
         }
